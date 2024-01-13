@@ -1,0 +1,42 @@
+{
+    "team_results": [
+        {
+            "Team Name": "Egor",
+            "Total Points": 142,
+            "Players": {
+                "Alberto Munarriz": 5,
+                "Dusan Mandic": 10,
+                "Felipe Perrone": 11,
+                "Francesco Di Fulvio": 10,
+                "Jerko Marinic Kragic": 21,
+                "Konstantinos Kakaris": 32,
+                "Miroslav Perkovic": 16,
+                "Nikola Jaksic": 16,
+                "Petar Tesanovic": 21
+            },
+            "Captain Points": 32,
+            "Captain": "Konstantinos Kakaris"
+        },
+        {
+            "Team Name": "Juho",
+            "Total Points": 184,
+            "Players": {
+                "Aleksa Ukropina": -2,
+                "Alvaro Granados": 70,
+                "Dusan Mandic": 10,
+                "Emmanouil Zerdevas": 24,
+                "Felipe Perrone": 11,
+                "Konstantinos Genidounias": 3,
+                "Konstantinos Kakaris": 16,
+                "Nikola Jaksic": 16,
+                "Petar Tesanovic": 21,
+                "Strahinja Rasovic": 15
+            },
+            "Captain Points": 70,
+            "Captain": "Alvaro Granados"
+        }
+    ],
+    "leaderboard": [
+        {
+            "Team Name": "Juho",
+            "Total Points": 
