@@ -1,10 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Water Polo Fantasy</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-$END$
+    <h2>Leaderboard</h2>
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Team Name</th>
+                <th>Total Points</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard-output"></tbody>
+    </table>
+
+    <h2>Team Details</h2>
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Team Name</th>
+                <th>Total Points</th>
+                <th>Captain</th>
+                <th>Captain Points</th>
+            </tr>
+        </thead>
+        <tbody id="team-details-output"></tbody>
+    </table>
+    <h2>Rosters</h2>
+        <div class="country-container">
+    <h3>Spain</h3>
+    <select class="roster-dropdown">
+        <option value="Unai Aguirre">Unai Aguirre</option>
+        <option value="Alberto Munarriz">Alberto Munarriz</option>
+        <option value="Alvaro Granados">Alvaro Granados</option>
+        <option value="Bernat Sanahuja">Bernat Sanahuja</option>
+        <option value="Miguel de Toro">Miguel de Toro</option>
+        <option value="Marc Larumbe">Marc Larumbe</option>
+        <option value="Alberto Barroso">Alberto Barroso</option>
+        <option value="Sergi Cabanas">Sergi Cabanas</option>
+        <option value="Roger Tahull">Roger Tahull</option>
+        <option value="Felipe Perrone">Felipe Perrone</option>
+        <option value="Blai Mallarach">Blai Mallarach</option>
+        <option value="Alejandro Bustos">Alejandro Bustos</option>
+        <option value="Eduardo Lorrio">Eduardo Lorrio</option>
+    </select>
+    <button onclick="addToOwnTeam(this.previousElementSibling)">Add to Your Team</button>
+    <h3>Croatia</h3>
+</div>
+
+<div id="ownTeamContainer">
+    <h3>Your Team</h3>
+    <!-- Your team players will be displayed here -->
+</div>
+
+    <script src="script.js"></script>
 </body>
 </html>

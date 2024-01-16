@@ -1,88 +1,63 @@
-# Step 5: Web Scraping
-# Install the necessary libraries using: pip install requests beautifulsoup4
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, ElementNotInteractableException, NoSuchElementException
+import time
 
-# Function to scrape water polo game results from total-waterpolo
-def scrape_water_polo_results():
-    url = "https://www.total-waterpolo.com/results"
-    response = requests.get(url)
+driver = webdriver.Safari()
+driver.get("https://total-waterpolo.com/len-european-championships-2024-men/")
 
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser')
-        # Extract relevant information from the website
-        # Modify this part based on the structure of the total-waterpolo website
-        # For example, find the elements containing team names, scores, etc.
-        results = soup.find_all('div', class_='result')
-        game_results = []
-        for result in results:
-            team1 = result.find('span', class_='team1').text
-            team2 = result.find('span', class_='team2').text
-            score_team1 = result.find('span', class_='score1').text
-            score_team2 = result.find('span', class_='score2').text
-            game_results.append({
-                'team1': team1,
-                'team2': team2,
-                'score_team1': score_team1,
-                'score_team2': score_team2
-            })
-        return game_results
-    else:
-        print("Error fetching data from total-waterpolo")
-        return []
+try:
+    driver.maximize_window()
+    # Wait for 20 seconds before performing the next actions
+    time.sleep(10)
+    # Handle cookie consent if it exists
+    cookie_popup = driver.find_element_by_id("cookie_action_close_header")
+    if cookie_popup.is_displayed():
+        # Click the "ACCEPT" button to handle the cookie consent
+        cookie_popup.click()
 
-# Step 6: Database Setup
-# Install the necessary library using: pip install sqlite3
-import sqlite3
+    # Loop for all games available
+    match_links = driver.find_elements_by_class_name("match-link")[:2]
 
-# Function to create a SQLite database and a table for game results
-def setup_database():
-    conn = sqlite3.connect('water_polo_fantasy.db')
-    cursor = conn.cursor()
+    # Iterate through each match link
+    for match_link in match_links:
+        try:
+            # Click the match link
+            match_link.click()
+            time.sleep(10)
+            # Perform actions (e.g., download stats)
+            # Click the "STARTLIST" button
+            startlist_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.ID, "nav-startlist-tab"))
+            )
+            startlist_button.click()
 
-    # Create a table for game results
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS game_results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            team1 TEXT,
-            team2 TEXT,
-            score_team1 INTEGER,
-            score_team2 INTEGER
-        )
-    ''')
+            # Scroll to the bottom of the page
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-    conn.commit()
-    conn.close()
+            # Wait for the "DOWNLOAD" button to be clickable at the bottom of the page
+            download_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.ID, "btn_download_stats"))
+            )
 
-# Main function to scrape data, store it in the database, and fetch it
-def main():
-    # Step 5: Web Scraping
-    game_results = scrape_water_polo_results()
+            # Click the "DOWNLOAD" button
+            download_button.click()
 
-    # Step 6: Database Setup
-    setup_database()
+            # Go back to the previous page
+            driver.back()
 
-    # Insert scraped game results into the database
-    conn = sqlite3.connect('water_polo_fantasy.db')
-    cursor = conn.cursor()
+        except NoSuchElementException:
+            print("Element not found. Skipping to the next match link.")
 
-    for result in game_results:
-        cursor.execute('''
-            INSERT INTO game_results (team1, team2, score_team1, score_team2)
-            VALUES (?, ?, ?, ?)
-        ''', (result['team1'], result['team2'], result['score_team1'], result['score_team2']))
+        except TimeoutException:
+            print("Timeout waiting for the button to be clickable.")
+        except ElementNotInteractableException:
+            print("Element is not interactable.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
 
-    conn.commit()
-
-    # Fetch game results from the database
-    cursor.execute('SELECT * FROM game_results')
-    fetched_results = cursor.fetchall()
-
-    print("Scraped Results:")
-    for row in fetched_results:
-        print(row)
-
-    conn.close()
-
-if __name__ == "__main__":
-    main()
+finally:
+    # Close the browser window
+    driver.quit()
