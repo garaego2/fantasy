@@ -2,10 +2,30 @@ import pandas as pd
 import numpy as np
 import glob
 import json
+import os
+from datetime import datetime
+
+
+def get_files_downloaded_today(directory_path):
+    today = datetime.today().date()
+
+    files_today = []
+    for filename in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, filename)
+
+        # Use either getctime() or getmtime() based on your requirement
+        file_time = datetime.fromtimestamp(os.path.getctime(file_path)).date()
+
+        if file_time == today:
+            files_today.append(file_path)
+
+    return files_today
+
 
 directory_path = '/Users/egor/Downloads/'
 file_pattern = 'player_stats_*.csv'
 
+today_files = get_files_downloaded_today(directory_path)
 combined_df = pd.DataFrame()
 file_list = glob.glob(directory_path + file_pattern)
 

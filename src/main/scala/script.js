@@ -45,15 +45,78 @@ fetch("team_results.json")
     }
     teamDetailsPlaceholder.innerHTML = teamDetailsOut;
   });
-function addToOwnTeam(selectElement) {
-        // Get the selected player's value
-        var selectedPlayer = selectElement.value;
 
-        // Create a new element for the selected player
-        var playerElement = document.createElement("div");
+function addToOwnTeam(playerDropdownId, positionDropdownId) {
+    var selectedPlayer = document.getElementById(playerDropdownId).value;
+    var selectedPosition = document.getElementById(positionDropdownId).value;
+
+    if (selectedPlayer && selectedPosition) {
+        var playerContainer = document.createElement("div");
+        var playerElement = document.createElement("span");
         playerElement.textContent = selectedPlayer;
 
-        // Append the player to your team container (adjust the container ID as needed)
+        // Create a radio button for the player
+        var radioBtn = document.createElement("input");
+        radioBtn.type = "radio";
+        radioBtn.name = "captain";
+
+        // Append the player, radio button, and position to the container
+        playerContainer.appendChild(playerElement);
+        playerContainer.appendChild(radioBtn);
+        playerContainer.appendChild(document.createTextNode(" (" + selectedPosition + ")"));
+
         var ownTeamContainer = document.getElementById("ownTeamContainer");
-        ownTeamContainer.appendChild(playerElement);
+        ownTeamContainer.appendChild(playerContainer);
     }
+}
+
+function restartTeam() {
+    // Remove all player containers
+    var containers = document.querySelectorAll("#ownTeamContainer");
+    containers.forEach(function (container) {
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+    });
+}
+
+
+function saveTeam() {
+  teamName = prompt("Enter a name for your team:");
+    var teamData = {
+        userName: teamName,
+        goalkeepers: [],
+        fieldPlayers: [],
+        benchPlayers: [],
+        captain: null,
+    };
+
+    if (teamName !== null && teamName.trim() !== "") {
+        // Iterate through all player containers in ownTeamContainer
+        var ownTeamContainer = document.getElementById("ownTeamContainer");
+        var playerContainers = ownTeamContainer.querySelectorAll("div");
+
+        playerContainers.forEach(function (container) {
+            var playerName = container.textContent.trim();
+
+            // Check the parent container to determine the player's position
+            if (container.parentElement.id === "goalkeeperContainer") {
+                teamData.goalkeepers.push(playerName);
+            } else if (container.parentElement.id === "outfieldPlayersContainer") {
+                teamData.fieldPlayers.push(playerName);
+            } else if (container.parentElement.id === "benchPlayersContainer") {
+                teamData.benchPlayers.push(playerName);
+            }
+
+            // Check for the selected captain
+            var radioBtn = container.querySelector("input[name='captain']");
+            if (radioBtn && radioBtn.checked) {
+                teamData.captain = playerName;
+            }
+        });
+
+        // Convert teamData to JSON
+        var jsonString = JSON.stringify(teamData);
+        console.log(jsonString);
+    }
+}

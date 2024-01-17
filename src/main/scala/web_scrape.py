@@ -10,12 +10,9 @@ driver.get("https://total-waterpolo.com/len-european-championships-2024-men/")
 
 try:
     driver.maximize_window()
-    # Wait for 20 seconds before performing the next actions
     time.sleep(10)
-    # Handle cookie consent if it exists
     cookie_popup = driver.find_element_by_id("cookie_action_close_header")
     if cookie_popup.is_displayed():
-        # Click the "ACCEPT" button to handle the cookie consent
         cookie_popup.click()
 
     # Loop for all games available

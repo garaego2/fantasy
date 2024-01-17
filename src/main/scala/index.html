@@ -29,10 +29,11 @@
         </thead>
         <tbody id="team-details-output"></tbody>
     </table>
+
     <h2>Rosters</h2>
-        <div class="country-container">
+<div class="country-container">
     <h3>Spain</h3>
-    <select class="roster-dropdown">
+    <select class="roster-dropdown" id="spainPlayerDropdown">
         <option value="Unai Aguirre">Unai Aguirre</option>
         <option value="Alberto Munarriz">Alberto Munarriz</option>
         <option value="Alvaro Granados">Alvaro Granados</option>
@@ -47,13 +48,51 @@
         <option value="Alejandro Bustos">Alejandro Bustos</option>
         <option value="Eduardo Lorrio">Eduardo Lorrio</option>
     </select>
-    <button onclick="addToOwnTeam(this.previousElementSibling)">Add to Your Team</button>
+    <select id="spainPositionDropdown">
+        <option value="goalkeeper">Goalkeeper</option>
+        <option value="field">Field</option>
+        <option value="bench">Bench</option>
+    </select>
+
+    <button onclick="addToOwnTeam('spainPlayerDropdown', 'spainPositionDropdown')">Add to Your Team</button>
     <h3>Croatia</h3>
-</div>
+    <select class="roster-dropdown" id="croatiaPlayerDropdown">
+        <option value="Marko Bijac">Marko Bijac</option>
+        <option value="Alberto Munarriz">Alberto Munarriz</option>
+        <option value="Alvaro Granados">Alvaro Granados</option>
+        <option value="Bernat Sanahuja">Bernat Sanahuja</option>
+        <option value="Miguel de Toro">Miguel de Toro</option>
+        <option value="Marc Larumbe">Marc Larumbe</option>
+        <option value="Alberto Barroso">Alberto Barroso</option>
+        <option value="Sergi Cabanas">Sergi Cabanas</option>
+        <option value="Roger Tahull">Roger Tahull</option>
+        <option value="Felipe Perrone">Felipe Perrone</option>
+        <option value="Blai Mallarach">Blai Mallarach</option>
+        <option value="Alejandro Bustos">Alejandro Bustos</option>
+        <option value="Eduardo Lorrio">Eduardo Lorrio</option>
+    </select>
+
+    <!-- Dropdown for selecting the player's position -->
+    <select id="croatiaPositionDropdown">
+        <option value="goalkeeper">Goalkeeper</option>
+        <option value="field">Field</option>
+        <option value="bench">Bench</option>
+    </select>
+
+    <button onclick="addToOwnTeam('croatiaPlayerDropdown', 'croatiaPositionDropdown')">Add to Your Team</button>
+
 
 <div id="ownTeamContainer">
-    <h3>Your Team</h3>
-    <!-- Your team players will be displayed here -->
+    <h3>Your Team Captain</h3>
+      <div id="goalkeeperContainer">
+    </div>
+    <div id="outfieldPlayersContainer">
+    </div>
+    <div id="benchPlayersContainer">
+    </div>
+    </div>
+    <button onclick="saveTeam()">Save Team</button>
+    <button onclick="restartTeam()">Restart Team</button>
 </div>
 
     <script src="script.js"></script>
