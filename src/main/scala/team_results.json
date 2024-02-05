@@ -2,50 +2,193 @@
     "team_results": [
         {
             "Team Name": "Egor",
-            "Total Points": 36,
+            "Total Points": 76,
             "Players": {
-                "Alberto Munarriz": 11,
-                "Felipe Perrone": 16,
-                "Jerko Marinic Kragic": 9,
-                "Konstantinos Kakaris": 0
+                "Alvaro Granados": 76
             },
-            "Captain Points": 0,
-            "Captain": "Konstantinos Kakaris"
-        },
-        {
-            "Team Name": "Juho",
-            "Total Points": 34,
-            "Players": {
-                "Alvaro Granados": 18,
-                "Felipe Perrone": 16
-            },
-            "Captain Points": 18,
+            "Captain Points": 76,
             "Captain": "Alvaro Granados"
         },
         {
-            "Team Name": "Niklas",
-            "Total Points": 25,
+            "Team Name": "Pablo",
+            "Total Points": 50,
             "Players": {
-                "Alvaro Granados": 9,
-                "Felipe Perrone": 16,
-                "Konstantinos Kakaris": 0
+                "Alvaro Granados": 38,
+                "Marko Bijac": 12,
+                "Yusuke Inaba": 0
             },
             "Captain Points": 0,
-            "Captain": "Konstantinos Kakaris"
+            "Captain": "Yusuke Inaba"
+        },
+        {
+            "Team Name": "Grayden",
+            "Total Points": 0,
+            "Players": {
+                "Hannes Daube": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Hannes Daube"
+        },
+        {
+            "Team Name": "Sandor",
+            "Total Points": 38,
+            "Players": {
+                "Alvaro Granados": 38,
+                "Gergo Zalanki": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Gergo Zalanki"
+        },
+        {
+            "Team Name": "Kike",
+            "Total Points": 77,
+            "Players": {
+                "Alvaro Granados": 38,
+                "Felipe Perrone": 27,
+                "Marko Bijac": 12,
+                "Thomas Vernoux": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Thomas Vernoux"
+        },
+        {
+            "Team Name": "Nemo",
+            "Total Points": 80,
+            "Players": {
+                "Alvaro Granados": 38,
+                "Unai Aguirre": 42,
+                "Gergo Zalanki": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Gergo Zalanki"
+        },
+        {
+            "Team Name": "Niklas",
+            "Total Points": 66,
+            "Players": {
+                "Alvaro Granados": 38,
+                "Bernat Sanahuja": 28,
+                "Gergo Zalanki": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Gergo Zalanki"
+        },
+        {
+            "Team Name": "Juho",
+            "Total Points": 38,
+            "Players": {
+                "Alvaro Granados": 38,
+                "Gergo Zalanki": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Gergo Zalanki"
+        },
+        {
+            "Team Name": "Nemanja",
+            "Total Points": 76,
+            "Players": {
+                "Alvaro Granados": 76
+            },
+            "Captain Points": 76,
+            "Captain": "Alvaro Granados"
+        },
+        {
+            "Team Name": "Oskari",
+            "Total Points": 38,
+            "Players": {
+                "Alvaro Granados": 38,
+                "Thomas Vernoux": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Thomas Vernoux"
+        },
+        {
+            "Team Name": "Marko",
+            "Total Points": 76,
+            "Players": {
+                "Alvaro Granados": 76
+            },
+            "Captain Points": 76,
+            "Captain": "Alvaro Granados"
+        },
+        {
+            "Team Name": "Leo",
+            "Total Points": 103,
+            "Players": {
+                "Alvaro Granados": 76,
+                "Felipe Perrone": 27
+            },
+            "Captain Points": 76,
+            "Captain": "Alvaro Granados"
+        },
+        {
+            "Team Name": "Alexander",
+            "Total Points": 53,
+            "Players": {
+                "Rino Buric": 11,
+                "Unai Aguirre": 42,
+                "Dusan Mandic": 0
+            },
+            "Captain Points": 0,
+            "Captain": "Dusan Mandic"
         }
     ],
     "leaderboard": [
         {
-            "Team Name": "Egor",
-            "Total Points": 320
+            "Team Name": "Leo",
+            "Total Points": 103
         },
         {
-            "Team Name": "Juho",
-            "Total Points": 218
+            "Team Name": "Nemo",
+            "Total Points": 80
+        },
+        {
+            "Team Name": "Kike",
+            "Total Points": 77
+        },
+        {
+            "Team Name": "Nemanja",
+            "Total Points": 76
+        },
+        {
+            "Team Name": "Egor",
+            "Total Points": 76
+        },
+        {
+            "Team Name": "Marko",
+            "Total Points": 76
         },
         {
             "Team Name": "Niklas",
-            "Total Points": 179
+            "Total Points": 66
+        },
+        {
+            "Team Name": "Alexander",
+            "Total Points": 53
+        },
+        {
+            "Team Name": "Pablo",
+            "Total Points": 50
+        },
+        {
+            "Team Name": "Juho",
+            "Total Points": 38
+        },
+        {
+            "Team Name": "Oskari",
+            "Total Points": 38
+        },
+        {
+            "Team Name": "Sandor",
+            "Total Points": 38
+        },
+        {
+            "Team Name": "Grayden",
+            "Total Points": 0
+        },
+        {
+            "Team Name": "Miiko",
+            "Total Points": 0
         }
     ]
 }

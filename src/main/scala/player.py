@@ -34,22 +34,45 @@ for file in file_list:
     combined_df = pd.concat([combined_df, df], ignore_index=True)
 
 # Player points
-combined_df['Weighted_Score'] = (combined_df['GOALS']*6) + combined_df['PF DRAWN']*3 + combined_df['SWIMOFFS']*2 \
-                                - combined_df['ATTEMPTS'] + (combined_df['ASSISTS']) + + combined_df['STEALS'] \
-                                + combined_df['BLOCKS'] - combined_df['PERSONAL FOULS'] - \
-                                combined_df['OFFENSIVE FOULS'] - combined_df['BALLS LOST']
-combined_df.loc[combined_df['#'].isin([1, 13]), 'Weighted_Score'] = (combined_df['GOALS']*40 + combined_df['SAVES']*3)
+combined_df['Weighted_Score'] = (combined_df['GOALS'] * 6) + 2 * (combined_df['PF DRAWN'] + combined_df['SWIMOFFS'] +
+                                                                  combined_df['BLOCKS'] + combined_df['ASSISTS'] +
+                                                                  combined_df['STEALS']) \
+                                - combined_df['PERSONAL FOULS'] - combined_df['ATTEMPTS'] \
+                                - combined_df['OFFENSIVE FOULS'] - combined_df['BALLS LOST']
+combined_df.loc[combined_df['#'].isin([1, 13]), 'Weighted_Score'] = (
+        combined_df['GOALS'] * 33 + combined_df['SAVES'] * 3)
 # print(combined_df.iloc[:, [3, -1]])
 
 
 captains = {}
 teams = {
-    'Egor': ['Petar Tesanovic', 'Alvaro Granados ', 'Alberto Munarriz', 'Dusan Mandic', 'Francesco Di Fulvio', 'Nikola Jaksic',
-             'Konstantinos Kakaris (C)', 'Jerko Marinic Kragic', 'Felipe Perrone', 'Miroslav Perkovic'],
-    'Juho': ['Petar Tesanovic', 'Felipe Perrone', 'Nikola Jaksic', 'Strahinja Rasovic', 'Dusan Mandic', 'Konstantinos Kakaris',
-             'Alvaro Granados (C)', 'Emmanouil Zerdevas', 'Aleksa Ukropina', 'Konstantinos Genidounias'],
-    'Niklas': ['Emmanouil Zerdevas', 'Konstantinos Kakaris (C)', 'Felipe Perrone', 'Alvaro Granados', 'Francesco Di Fulvio',
-               'Nikola Jaksic', 'Aleksa Ukropina', 'Andrea Fondelli', 'Strahinja Rasovic', 'Thomas Vernoux']
+    'Egor': ['Soma Vogel', 'Alvaro Granados (C)', 'Gergo Zalanki', 'Francesco di Fulvio', 'Thomas Vernoux',
+             'Dusan Mandic', 'Konstantinos Kakaris'],
+    'Pablo': ['Marko Bijac', 'Yusuke Inaba (C)', 'Gergo Zalanki', 'Ben Hallock', 'Szilard Jansik', 'Dusan Mandic',
+              'Alvaro Granados'],
+    'Grayden': ['Marko del Lungo', 'Hannes Daube (C)', 'Nickolaos Papanickola', 'Denes Varga', 'Ben Hallock',
+                'Sam Slobodien', 'Jacob Mercep'],
+    'Sandor': ['Soma Vogel', 'Gergo Zalanki (C)', 'Alvaro Granados', 'Francesco di Fulvio', 'Thomas Vernoux',
+               'Dusan Mandic', 'Szilard Jansik'],
+    'Kike': ['Marko Bijac', 'Thomas Vernoux (C)', 'Gergo Zalanki', 'Ben Hallock', 'Alvaro Granados', 'Dusan Mandic',
+             'Felipe Perrone'],
+    'Nemo': ['Unai Aguirre', 'Gergo Zalanki (C)', 'Alvaro Granados', 'Edoardo di Somma', 'Thomas Vernoux',
+             'Nikola Jaksic', 'Krisztian Manhercz'],
+    'Niklas': ['Marko del Lungo', 'Gergo Zalanki (C)', 'Alvaro Granados', 'Konstantinos Genidounias', 'Thomas Vernoux',
+               'Bernat Sanahuja', 'Konstantinos Kakaris'],
+    'Juho': ['Marko del Lungo', 'Gergo Zalanki (C)', 'Alvaro Granados', 'Ben Hallock', 'Thomas Vernoux', 'Dusan Mandic',
+             'Konstantinos Genidounias'],
+    'Nemanja': ['Petar Tesanovic', 'Alvaro Granados (C)', 'Gergo Zalanki', 'Edoardo di Somma', 'Thomas Vernoux',
+                'Nikola Jaksic', 'Konstantinos Genidounias'],
+    'Oskari': ['Petar Tesanovic', 'Thomas Vernoux (C)', 'Alvaro Granados', 'Ben Hallock', 'Gergo Zalanki',
+               'Dusan Mandic', 'Konstantinos Kakaris'],
+    'Marko': ['Soma Vogel', 'Alvaro Granados (C)', 'Gergo Zalanki', 'Francesco di Fulvio', 'Thomas Vernoux',
+              'Dusan Mandic', 'Konstantinos Kakaris'],
+    'Leo': ['Marko del Lungo', 'Alvaro Granados (C)', 'Gergo Zalanki', 'Felipe Perrone', 'Hannes Daube',
+            'Konstantinos Genidounias', 'Konstantinos Kakaris'],
+    'Alexander': ['Unai Aguirre', 'Dusan Mandic (C)', 'Rino Buric', 'Miroslav Perkovic', 'Thomas Vernoux',
+                  'Nikola Jaksic', 'Konstantinos Kakaris'],
+
 }
 team_results = []
 
@@ -75,7 +98,7 @@ for team_name, player_list in teams.items():
         'Team Name': team_name,
         'Total Points': total_points,
         'Players': points_per_player.to_dict(),
-        'Captain Points': captain_points*2,
+        'Captain Points': captain_points * 2,
         'Captain': captain_name
     }
     team_results.append(team_result)
@@ -153,7 +176,8 @@ def generate_leaderboard(score, team_results_filename='team_results.json'):
 leaderboard = generate_leaderboard(team_results)
 
 # Convert int64 columns to a JSON serializable format
-team_results_serializable = [{key: convert_to_serializable(value) for key, value in team.items()} for team in team_results]
+team_results_serializable = [{key: convert_to_serializable(value) for key, value in team.items()} for team in
+                             team_results]
 sorted_serializable = [{key: convert_to_serializable(value) for key, value in team.items()} for team in leaderboard]
 
 # Save to json
