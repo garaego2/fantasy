@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9d9d75c4-fafe-43be-8fce-97f75ad663c8" name="Changes" comment="Teams set and brought up to date until MNEvsUSA">
+    <list default="true" id="9d9d75c4-fafe-43be-8fce-97f75ad663c8" name="Changes" comment="Added row between users">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/script.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -111,7 +112,14 @@
       <option name="project" value="LOCAL" />
       <updated>1707145719761</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Added row between users">
+      <created>1707146487665</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1707146487665</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -131,6 +139,7 @@
     <MESSAGE value="Updated script with functionality to add players and buttons to edit/save. Save functionality not working" />
     <MESSAGE value="update and test" />
     <MESSAGE value="Teams set and brought up to date until MNEvsUSA" />
-    <option name="LAST_COMMIT_MESSAGE" value="Teams set and brought up to date until MNEvsUSA" />
+    <MESSAGE value="Added row between users" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added row between users" />
   </component>
 </project>

@@ -28,23 +28,22 @@ fetch("team_results.json")
     `;
       teamDetailsOut += `
         <tr>
-          <td class="bold">${team["Team Name"]}</td>
-          <td>${team["Total Points"]}</td>
-          <td>${team["Captain"]}</td>
-          <td>${team["Captain Points"]}</td>
+            <td class="bold">${team["Team Name"]}</td>
+            <td>${team["Total Points"]}</td>
         </tr>
         <tr>
-          <td colspan="4">Players:</td>
+            <td colspan="2">Players:</td>
         </tr>
-      `;
+    `;
 
       // Loop through the Players object
       for (let player in team.Players) {
+        let captainMark = (team["Captain"] === player) ? " (C)" : ""; // Add (C) next to the captain's name
         teamDetailsOut += `
-          <tr>
-            <td colspan="2">${player}</td>
-            <td colspan="2">${team.Players[player]}</td>
-          </tr>
+            <tr>
+                <td>${player}${captainMark}</td>
+                <td>${team.Players[player]}</td>
+            </tr>
         `;
       }
     }
