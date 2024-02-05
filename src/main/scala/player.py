@@ -40,7 +40,7 @@ combined_df['Weighted_Score'] = (combined_df['GOALS'] * 6) + 2 * (combined_df['P
                                 - combined_df['PERSONAL FOULS'] - combined_df['ATTEMPTS'] \
                                 - combined_df['OFFENSIVE FOULS'] - combined_df['BALLS LOST']
 combined_df.loc[combined_df['#'].isin([1, 13]), 'Weighted_Score'] = (
-        combined_df['GOALS'] * 33 + combined_df['SAVES'] * 3)
+        combined_df['GOALS'] * 33 + combined_df['SAVES'])
 # print(combined_df.iloc[:, [3, -1]])
 
 

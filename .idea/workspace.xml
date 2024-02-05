@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9d9d75c4-fafe-43be-8fce-97f75ad663c8" name="Changes" comment="Updated script with functionality to add players and buttons to edit/save. Save functionality not working">
+    <list default="true" id="9d9d75c4-fafe-43be-8fce-97f75ad663c8" name="Changes" comment="update and test">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/player.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/script.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/styles.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/team_results.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/team_results.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -100,7 +101,14 @@
       <option name="project" value="LOCAL" />
       <updated>1705507182570</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="update and test">
+      <created>1707143977731</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1707143977731</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -118,6 +126,7 @@
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="Webscraping, points calculation, leaderboard and simple JSON file output" />
     <MESSAGE value="Updated script with functionality to add players and buttons to edit/save. Save functionality not working" />
-    <option name="LAST_COMMIT_MESSAGE" value="Updated script with functionality to add players and buttons to edit/save. Save functionality not working" />
+    <MESSAGE value="update and test" />
+    <option name="LAST_COMMIT_MESSAGE" value="update and test" />
   </component>
 </project>

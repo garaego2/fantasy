@@ -23,7 +23,7 @@ fetch("team_results.json")
     for (let team of results.team_results) {
       teamDetailsOut += `
         <tr>
-          <td>${team["Team Name"]}</td>
+          <td class="bold">${team["Team Name"]}</td>
           <td>${team["Total Points"]}</td>
           <td>${team["Captain"]}</td>
           <td>${team["Captain Points"]}</td>
