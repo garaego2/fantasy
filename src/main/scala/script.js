@@ -21,6 +21,11 @@ fetch("team_results.json")
 
     // Display team details
     for (let team of results.team_results) {
+    teamDetailsOut += `
+        <tr>
+            <td colspan="14"></td>
+        </tr>
+    `;
       teamDetailsOut += `
         <tr>
           <td class="bold">${team["Team Name"]}</td>

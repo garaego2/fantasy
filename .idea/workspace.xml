@@ -4,12 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9d9d75c4-fafe-43be-8fce-97f75ad663c8" name="Changes" comment="update and test">
+    <list default="true" id="9d9d75c4-fafe-43be-8fce-97f75ad663c8" name="Changes" comment="Teams set and brought up to date until MNEvsUSA">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/player.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/script.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/styles.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/team_results.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/team_results.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -108,7 +104,14 @@
       <option name="project" value="LOCAL" />
       <updated>1707143977731</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Teams set and brought up to date until MNEvsUSA">
+      <created>1707145719761</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1707145719761</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -127,6 +130,7 @@
     <MESSAGE value="Webscraping, points calculation, leaderboard and simple JSON file output" />
     <MESSAGE value="Updated script with functionality to add players and buttons to edit/save. Save functionality not working" />
     <MESSAGE value="update and test" />
-    <option name="LAST_COMMIT_MESSAGE" value="update and test" />
+    <MESSAGE value="Teams set and brought up to date until MNEvsUSA" />
+    <option name="LAST_COMMIT_MESSAGE" value="Teams set and brought up to date until MNEvsUSA" />
   </component>
 </project>
