@@ -2,31 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Polo Fantasy</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h2>Leaderboard</h2>
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Team Name</th>
-                <th>Total Points</th>
-            </tr>
-        </thead>
-        <tbody id="leaderboard-output"></tbody>
-    </table>
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'TeamDetails')">Team Details</button>
+        <button class="tablinks" onclick="openTab(event, 'Leaderboard')">Leaderboard</button>
+        <button class="tablinks" onclick="openTab(event, 'SelectTeam')">Select Team</button>
+    </div>
 
-    <h2>Team Details</h2>
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Team Name</th>
-                <th>Round Points</th>
-            </tr>
-        </thead>
-        <tbody id="team-details-output"></tbody>
-    </table>
+    <div id="TeamDetails" class="tabcontent">
+        <h3>Team Details</h3>
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Round Points</th>
+                </tr>
+            </thead>
+            <tbody id="team-details-output"></tbody>
+        </table>
+    </div>
+
+    <div id="Leaderboard" class="tabcontent">
+        <h3>Leaderboard</h3>
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Total Points</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-output"></tbody>
+        </table>
+    </div>
+
+    <div id="SelectTeam" class="tabcontent">
+        <h3>Select Team</h3>
+        <form id="select-team-form">
+            <label for="team-name">Team Name:</label>
+            <input type="text" id="team-name" name="team-name" required><br><br>
+
+            <h4>Starting Lineup</h4>
+            <div id="starting-lineup">
+                <!-- Starting lineup inputs will be dynamically added here -->
+            </div>
+
+            <h4>Bench</h4>
+            <div id="bench">
+                <!-- Bench inputs will be dynamically added here -->
+            </div>
+
+            <button type="button" onclick="saveTeam()">Save Team</button>
+        </form>
+    </div>
 <!--
 <h2>Rosters</h2>
 <div class="country-container">
