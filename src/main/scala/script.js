@@ -1,8 +1,7 @@
+// Fetch and display leaderboard and team results
 fetch("team_results.json")
-  .then(function(response) {
-    return response.json();
-  })
-  .then(function(results) {
+  .then(response => response.json())
+  .then(results => {
     let leaderboardPlaceholder = document.querySelector("#leaderboard-output");
     let teamDetailsPlaceholder = document.querySelector("#team-details-output");
     let leaderboardOut = "";
@@ -21,12 +20,10 @@ fetch("team_results.json")
 
     // Display team details
     for (let team of results.team_results) {
-    teamDetailsOut += `
+      teamDetailsOut += `
         <tr>
             <td colspan="14"></td>
         </tr>
-    `;
-      teamDetailsOut += `
         <tr>
             <td class="bold">${team["Team Name"]}</td>
             <td>${team["Total Points"]}</td>
@@ -34,7 +31,7 @@ fetch("team_results.json")
         <tr>
             <td colspan="2">Players:</td>
         </tr>
-    `;
+      `;
 
       // Loop through the Players object
       for (let player in team.Players) {
@@ -48,200 +45,286 @@ fetch("team_results.json")
       }
     }
     teamDetailsPlaceholder.innerHTML = teamDetailsOut;
-  });
+  })
+  .catch(error => console.error('Error loading team results:', error));
 
-function addToOwnTeam(playerDropdownId, positionDropdownId) {
-    var selectedPlayer = document.getElementById(playerDropdownId).value;
-    var selectedPosition = document.getElementById(positionDropdownId).value;
-
-    if (selectedPlayer && selectedPosition) {
-        var playerContainer = document.createElement("div");
-        var playerElement = document.createElement("span");
-        playerElement.textContent = selectedPlayer;
-
-        // Create a radio button for the player
-        var radioBtn = document.createElement("input");
-        radioBtn.type = "radio";
-        radioBtn.name = "captain";
-
-        // Append the player, radio button, and position to the container
-        playerContainer.appendChild(playerElement);
-        playerContainer.appendChild(radioBtn);
-        playerContainer.appendChild(document.createTextNode(" (" + selectedPosition + ")"));
-
-        var ownTeamContainer = document.getElementById("ownTeamContainer");
-        ownTeamContainer.appendChild(playerContainer);
-    }
-}
-
-function restartTeam() {
-    // Remove all player containers
-    var containers = document.querySelectorAll("#ownTeamContainer");
-    containers.forEach(function (container) {
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
-    });
-}
-
-
-function saveTeam() {
-  teamName = prompt("Enter a name for your team:");
-    var teamData = {
-        userName: teamName,
-        goalkeepers: [],
-        fieldPlayers: [],
-        benchPlayers: [],
-        captain: null,
-    };
-
-    if (teamName !== null && teamName.trim() !== "") {
-        // Iterate through all player containers in ownTeamContainer
-        var ownTeamContainer = document.getElementById("ownTeamContainer");
-        var playerContainers = ownTeamContainer.querySelectorAll("div");
-
-        playerContainers.forEach(function (container) {
-            var playerName = container.textContent.trim();
-
-            // Check the parent container to determine the player's position
-            if (container.parentElement.id === "goalkeeperContainer") {
-                teamData.goalkeepers.push(playerName);
-            } else if (container.parentElement.id === "outfieldPlayersContainer") {
-                teamData.fieldPlayers.push(playerName);
-            } else if (container.parentElement.id === "benchPlayersContainer") {
-                teamData.benchPlayers.push(playerName);
-            }
-
-            // Check for the selected captain
-            var radioBtn = container.querySelector("input[name='captain']");
-            if (radioBtn && radioBtn.checked) {
-                teamData.captain = playerName;
-            }
-        });
-
-        // Convert teamData to JSON
-        var jsonString = JSON.stringify(teamData);
-        console.log(jsonString);
-    }
-}
-
+// Function to handle tab switching
 function openTab(evt, tabName) {
-    // Declare all variables
-    var i, tabcontent, tablinks;
+    let i, tabcontent, tablinks;
 
-    // Get all elements with class="tabcontent" and hide them
     tabcontent = document.getElementsByClassName("tabcontent");
     for (i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
     }
 
-    // Get all elements with class="tablinks" and remove the class "active"
     tablinks = document.getElementsByClassName("tablinks");
     for (i = 0; i < tablinks.length; i++) {
         tablinks[i].className = tablinks[i].className.replace(" active", "");
     }
 
-    // Show the current tab, and add an "active" class to the button that opened the tab
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
 }
 
 
-/* scripts.js */
+//////////
 
-// Function to dynamically create player input fields
-function createPlayerInput(section, index) {
+
+
+
+// Handle player selection and placement
+function selectPlayer(playerName) {
+    console.log('Selecting player:', playerName); // Debug log
+
+    const startingLineupDiv = document.getElementById('starting-lineup');
+    const benchDiv = document.getElementById('bench');
+
+    if (isPlayerSelected(playerName)) {
+        alert('Player is already selected.');
+        return;
+    }
+
+    let added = false;
+
+    // Try to add player to the starting lineup
+    Array.from(startingLineupDiv.children).some((div) => {
+        if (div instanceof HTMLElement) {
+            const playerLabel = div.querySelector('.player-label');
+            if (playerLabel && playerLabel.dataset.filled === 'false') {
+                playerLabel.textContent = playerName;
+                playerLabel.dataset.filled = 'true'; // Mark this slot as filled
+                added = true;
+                console.log(`Added player to starting lineup: ${playerName}`); // Debug log
+                return true; // Stop the loop
+            }
+        }
+        return false; // Continue the loop
+    });
+
+    // If not added to starting lineup, try to add player to the bench
+    if (!added) {
+        Array.from(benchDiv.children).some((div) => {
+            if (div instanceof HTMLElement) {
+                const playerLabel = div.querySelector('.player-label');
+                if (playerLabel && playerLabel.dataset.filled === 'false') {
+                    playerLabel.textContent = playerName;
+                    playerLabel.dataset.filled = 'true'; // Mark this slot as filled
+                    added = true;
+                    console.log(`Added player to bench: ${playerName}`); // Debug log
+                    return true; // Stop the loop
+                }
+            }
+            return false; // Continue the loop
+        });
+    }
+
+    if (!added) {
+        alert('No available slot for the player.');
+    }
+}
+
+// Check if the player is already selected
+function isPlayerSelected(playerName) {
+    const selectedPlayers = document.querySelectorAll('#starting-lineup .player-display .player-label, #bench .player-display .player-label');
+    return Array.from(selectedPlayers).some(label => label.textContent === playerName);
+}
+
+// Create player display divs instead of input fields
+function createPlayerDisplay(section, index) {
     const container = document.createElement('div');
-    container.className = 'player-input';
+    container.className = 'player-display';
+    container.id = `player-${section}-${index}`;
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'player-name';
-    input.placeholder = `Player ${index + 1}`;
-    input.setAttribute('list', 'players');
-    input.required = true;
+    const playerLabel = document.createElement('span');
+    playerLabel.className = 'player-label';
+    playerLabel.dataset.filled = 'false'; // Initialize as not filled
+    // No text content initially, will be set when player is selected
 
     const captainButton = document.createElement('button');
     captainButton.type = 'button';
     captainButton.textContent = 'Captain';
+    captainButton.className = 'captain-button'; // Add class for styling
     captainButton.onclick = () => selectCaptain(section, index);
+    captainButton.style.display = section === 'starting-lineup' ? 'inline' : 'none'; // Show only for starting lineup
 
-    container.appendChild(input);
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.textContent = 'Remove';
+    removeButton.onclick = () => removePlayer(section, index);
+
+    container.appendChild(playerLabel);
     container.appendChild(captainButton);
+    container.appendChild(removeButton);
 
     document.getElementById(section).appendChild(container);
 }
 
-// Function to create starting lineup and bench inputs
-function createTeamInputs() {
+// Remove player from the lineup or bench
+function removePlayer(section, index) {
+    const playerDiv = document.getElementById(`player-${section}-${index}`);
+    if (playerDiv) {
+        const playerLabel = playerDiv.querySelector('.player-label');
+        if (playerLabel && playerLabel.dataset.filled === 'true') {
+            playerLabel.textContent = ''; // Clear player name
+            playerLabel.dataset.filled = 'false'; // Mark slot as empty
+            // Optionally, reset captain status if needed
+            const captainButton = playerDiv.querySelector('button');
+            if (captainButton) {
+                captainButton.classList.remove('captain-selected'); // Clear captain class if needed
+            }
+            console.log(`Removed player from ${section}: ${playerLabel.textContent}`); // Debug log
+        }
+    }
+}
+
+// Select captain for a slot
+function selectCaptain(section, index) {
+    const playerDivs = document.querySelectorAll(`#${section} .player-display`);
+    playerDivs.forEach(div => {
+        const captainButton = div.querySelector('button');
+        if (captainButton) {
+            captainButton.classList.remove('captain-selected');
+        }
+    });
+
+    const playerDiv = document.getElementById(`player-${section}-${index}`);
+    if (playerDiv) {
+        const captainButton = playerDiv.querySelector('button');
+        if (captainButton) {
+            captainButton.classList.add('captain-selected'); // Highlight the captain button
+        }
+    }
+}
+
+// Create starting lineup and bench display divs
+function createTeamDisplays() {
     const startingLineupCount = 7;
     const benchCount = 6;
 
+    // Create starting lineup slots
     for (let i = 0; i < startingLineupCount; i++) {
-        createPlayerInput('starting-lineup', i);
+        createPlayerDisplay('starting-lineup', i);
     }
 
+    // Create bench slots
     for (let i = 0; i < benchCount; i++) {
-        createPlayerInput('bench', i);
+        createPlayerDisplay('bench', i);
     }
 }
 
-// Function to handle captain selection
-function selectCaptain(section, index) {
-    // Deselect all captain buttons
-    const captainButtons = document.querySelectorAll(`#${section} .player-input button`);
-    captainButtons.forEach(button => button.classList.remove('captain-selected'));
+// Fetch players from the server
+function fetchPlayers(filterNationality = '', sortOrder = 'desc') {
+    return fetch('http://localhost:3000/api/players')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json(); // Parse as JSON directly
+        })
+        .then(data => {
+            console.log('Fetched players:', data); // Debug log
 
-    // Select the clicked captain button
-    captainButtons[index].classList.add('captain-selected');
+            // Apply filter if specified
+            if (filterNationality) {
+                data = data.filter(player => player.nationality === filterNationality);
+            }
+
+            // Sort players based on the selected sort method
+            if (sortOrder === 'asc') {
+                data.sort((a, b) => a.points - b.points);
+            } else {
+                data.sort((a, b) => b.points - a.points);
+            }
+
+            displayPlayers(data); // Display the filtered and sorted data
+            return data; // Return the filtered and sorted data
+        })
+        .catch(error => console.error('Error fetching players:', error));
 }
 
-// Function to save team data
-function saveTeam() {
-    const teamName = document.getElementById('team-name').value;
-    const startingLineup = [];
-    const bench = [];
-    let captain = '';
 
-    document.querySelectorAll('#starting-lineup .player-name').forEach((input, index) => {
-        startingLineup.push(input.value);
-        if (input.nextSibling.classList.contains('captain-selected')) {
-            captain = input.value;
+// Populate the player list on the right side
+function displayPlayers(players) {
+    const availablePlayersTBody = document.getElementById('available-players');
+    availablePlayersTBody.innerHTML = '';
+
+    if (!Array.isArray(players)) {
+        console.error('Expected an array of players but got:', players);
+        return;
+    }
+
+    players.forEach(player => {
+        if (player.name && player.points != null && player.nationality) {
+            const row = document.createElement('tr');
+
+            const nameCell = document.createElement('td');
+            nameCell.textContent = player.name;
+
+            const pointsCell = document.createElement('td');
+            pointsCell.textContent = player.points;
+
+            const nationalityCell = document.createElement('td');
+            nationalityCell.textContent = player.nationality;
+
+            row.appendChild(nameCell);
+            row.appendChild(pointsCell);
+            row.appendChild(nationalityCell);
+
+            row.addEventListener('click', () => {
+                console.log('Player row clicked:', player.name); // Debug log
+                selectPlayer(player.name);
+            });
+
+            availablePlayersTBody.appendChild(row);
+        } else {
+            console.warn('Player object missing name, points, or nationality:', player);
         }
-    });
-
-    document.querySelectorAll('#bench .player-name').forEach((input, index) => {
-        bench.push(input.value);
-        if (input.nextSibling.classList.contains('captain-selected')) {
-            captain = input.value;
-        }
-    });
-
-    const teamData = {
-        teamName,
-        startingLineup,
-        bench,
-        captain
-    };
-
-    // Call Python function to save data
-    fetch('/save_team', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(teamData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Success:', data);
-        alert('Team saved successfully!');
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-        alert('An error occurred while saving the team.');
     });
 }
 
-// Initialize team inputs on page load
-document.addEventListener('DOMContentLoaded', createTeamInputs);
+function populateFilterOptions(players) {
+    const filterSelect = document.getElementById('filter-nationality');
+    const predefinedNationalities = ['AUS', 'CRO', 'USA', 'ITA', 'JPN'];
+
+    // Add predefined options
+    filterSelect.innerHTML = '<option value="">All</option>'; // Reset filter options
+    predefinedNationalities.forEach(nationality => {
+        const option = document.createElement('option');
+        option.value = nationality;
+        option.textContent = nationality;
+        filterSelect.appendChild(option);
+    });
+
+    // Add dynamically fetched options
+    const nationalities = new Set(players.map(player => player.nationality));
+    nationalities.forEach(nationality => {
+        if (!predefinedNationalities.includes(nationality)) {
+            const option = document.createElement('option');
+            option.value = nationality;
+            option.textContent = nationality;
+            filterSelect.appendChild(option);
+        }
+    });
+}
+
+// Initialize team displays and fetch player data on page load
+document.addEventListener('DOMContentLoaded', () => {
+    createTeamDisplays();
+    fetchPlayers();
+});
+document.getElementById('filter-nationality').addEventListener('change', (event) => {
+    const filterNationality = event.target.value;
+    const sortOrder = document.getElementById('sort-method').value;
+    fetchPlayers(filterNationality, sortOrder);
+});
+
+document.getElementById('sort-method').addEventListener('change', (event) => {
+    const sortOrder = event.target.value;
+    const filterNationality = document.getElementById('filter-nationality').value;
+    fetchPlayers(filterNationality, sortOrder);
+});
+
+// Initialize and fetch player data on page load
+document.addEventListener('DOMContentLoaded', () => {
+    fetchPlayers().then(players => populateFilterOptions(players));
+});

@@ -44,20 +44,56 @@
         <form id="select-team-form">
             <label for="team-name">Team Name:</label>
             <input type="text" id="team-name" name="team-name" required><br><br>
-
-            <h4>Starting Lineup</h4>
-            <div id="starting-lineup">
-                <!-- Starting lineup inputs will be dynamically added here -->
+    
+            <div class="container">
+                <div class="selected-players">
+                    <h4>Starting Lineup</h4>
+                    <div id="starting-lineup">
+                        <!-- Starting lineup inputs will be dynamically added here -->
+                    </div>
+    
+                    <h4>Bench</h4>
+                    <div id="bench">
+                        <!-- Bench inputs will be dynamically added here -->
+                    </div>
+                </div>
+                <div id="player-selection">
+                    <h4>Player Selection</h4>
+                    <div id="player-controls">
+                        <label for="filter-nationality">Filter by Nationality:</label>
+                        <select id="filter-nationality">
+                            <option value="">All</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                
+                        <label for="sort-method">Sort by:</label>
+                        <select id="sort-method">
+                            <option value="desc">Points (Descending)</option>
+                            <option value="asc">Points (Ascending)</option>
+                        </select>
+                    </div>
+                    <div id="player-container">
+                        <table id="player-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Points</th>
+                                    <th>Nationality</th>
+                                </tr>
+                            </thead>
+                            <div class="table-container">
+                            <tbody id="available-players">
+                                <!-- Player rows will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-
-            <h4>Bench</h4>
-            <div id="bench">
-                <!-- Bench inputs will be dynamically added here -->
-            </div>
-
+    
             <button type="button" onclick="saveTeam()">Save Team</button>
         </form>
     </div>
+    
 <!--
 <h2>Rosters</h2>
 <div class="country-container">
