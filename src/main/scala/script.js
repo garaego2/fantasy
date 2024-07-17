@@ -69,59 +69,11 @@ function openTab(evt, tabName) {
 
 //////////
 
-
-
-
-// Handle player selection and placement
-function selectPlayer(playerName) {
-    console.log('Selecting player:', playerName); // Debug log
-
-    const startingLineupDiv = document.getElementById('starting-lineup');
-    const benchDiv = document.getElementById('bench');
-
-    if (isPlayerSelected(playerName)) {
-        alert('Player is already selected.');
-        return;
-    }
-
-    let added = false;
-
-    // Try to add player to the starting lineup
-    Array.from(startingLineupDiv.children).some((div) => {
-        if (div instanceof HTMLElement) {
-            const playerLabel = div.querySelector('.player-label');
-            if (playerLabel && playerLabel.dataset.filled === 'false') {
-                playerLabel.textContent = playerName;
-                playerLabel.dataset.filled = 'true'; // Mark this slot as filled
-                added = true;
-                console.log(`Added player to starting lineup: ${playerName}`); // Debug log
-                return true; // Stop the loop
-            }
-        }
-        return false; // Continue the loop
-    });
-
-    // If not added to starting lineup, try to add player to the bench
-    if (!added) {
-        Array.from(benchDiv.children).some((div) => {
-            if (div instanceof HTMLElement) {
-                const playerLabel = div.querySelector('.player-label');
-                if (playerLabel && playerLabel.dataset.filled === 'false') {
-                    playerLabel.textContent = playerName;
-                    playerLabel.dataset.filled = 'true'; // Mark this slot as filled
-                    added = true;
-                    console.log(`Added player to bench: ${playerName}`); // Debug log
-                    return true; // Stop the loop
-                }
-            }
-            return false; // Continue the loop
-        });
-    }
-
-    if (!added) {
-        alert('No available slot for the player.');
-    }
-}
+const selectedPlayers = {
+    startingLineup: [],
+    bench: [],
+    captainId: null
+};
 
 // Check if the player is already selected
 function isPlayerSelected(playerName) {
@@ -138,7 +90,6 @@ function createPlayerDisplay(section, index) {
     const playerLabel = document.createElement('span');
     playerLabel.className = 'player-label';
     playerLabel.dataset.filled = 'false'; // Initialize as not filled
-    // No text content initially, will be set when player is selected
 
     const captainButton = document.createElement('button');
     captainButton.type = 'button';
@@ -165,6 +116,7 @@ function removePlayer(section, index) {
     if (playerDiv) {
         const playerLabel = playerDiv.querySelector('.player-label');
         if (playerLabel && playerLabel.dataset.filled === 'true') {
+            const playerId = playerLabel.dataset.playerId; // Store player ID before clearing
             playerLabel.textContent = ''; // Clear player name
             playerLabel.dataset.filled = 'false'; // Mark slot as empty
             // Optionally, reset captain status if needed
@@ -172,6 +124,9 @@ function removePlayer(section, index) {
             if (captainButton) {
                 captainButton.classList.remove('captain-selected'); // Clear captain class if needed
             }
+            // Remove player from selected lists
+            selectedPlayers.startingLineup = selectedPlayers.startingLineup.filter(id => id !== playerId);
+            selectedPlayers.bench = selectedPlayers.bench.filter(id => id !== playerId);
             console.log(`Removed player from ${section}: ${playerLabel.textContent}`); // Debug log
         }
     }
@@ -181,7 +136,7 @@ function removePlayer(section, index) {
 function selectCaptain(section, index) {
     const playerDivs = document.querySelectorAll(`#${section} .player-display`);
     playerDivs.forEach(div => {
-        const captainButton = div.querySelector('button');
+        const captainButton = div.querySelector('button.captain-button');
         if (captainButton) {
             captainButton.classList.remove('captain-selected');
         }
@@ -189,11 +144,14 @@ function selectCaptain(section, index) {
 
     const playerDiv = document.getElementById(`player-${section}-${index}`);
     if (playerDiv) {
-        const captainButton = playerDiv.querySelector('button');
+        const captainButton = playerDiv.querySelector('button.captain-button');
         if (captainButton) {
             captainButton.classList.add('captain-selected'); // Highlight the captain button
+            selectedPlayers.captainId = playerDiv.querySelector('.player-label').dataset.playerId; // Update the selected captain ID
+            captainId = playerDiv.querySelector('.player-label').dataset.playerId;
         }
     }
+    console.log(`Captain selected: ${selectedPlayers.captainId}`);
 }
 
 // Create starting lineup and bench display divs
@@ -254,8 +212,9 @@ function displayPlayers(players) {
     }
 
     players.forEach(player => {
-        if (player.name && player.points != null && player.nationality) {
+        if (player.name && player.points != null && player.nationality && player.id) {
             const row = document.createElement('tr');
+            row.dataset.playerId = player.id; // Store player ID in a data attribute
 
             const nameCell = document.createElement('td');
             nameCell.textContent = player.name;
@@ -271,16 +230,16 @@ function displayPlayers(players) {
             row.appendChild(nationalityCell);
 
             row.addEventListener('click', () => {
-                console.log('Player row clicked:', player.name); // Debug log
-                selectPlayer(player.name);
+                selectPlayer(player.id, player.name); // Ensure playerId is passed here
             });
 
             availablePlayersTBody.appendChild(row);
         } else {
-            console.warn('Player object missing name, points, or nationality:', player);
+            console.warn('Player object missing name, points, nationality, or id:', player);
         }
     });
 }
+
 
 function populateFilterOptions(players) {
     const filterSelect = document.getElementById('filter-nationality');
@@ -323,8 +282,133 @@ document.getElementById('sort-method').addEventListener('change', (event) => {
     const filterNationality = document.getElementById('filter-nationality').value;
     fetchPlayers(filterNationality, sortOrder);
 });
-
+document.querySelector('.container').addEventListener('click', function(event) {
+    if (event.target.classList.contains('captain-button')) {
+        const button = event.target;
+        const section = button.closest('.player-display').parentElement.id; // Assuming section is parent element id
+        const index = Array.from(button.closest('.player-display').parentElement.children).indexOf(button.closest('.player-display'));
+        selectCaptain(section, index);
+    }
+});
 // Initialize and fetch player data on page load
 document.addEventListener('DOMContentLoaded', () => {
     fetchPlayers().then(players => populateFilterOptions(players));
 });
+
+// Add event listener to the Save Team button
+document.getElementById('save-team-button').addEventListener('click', handleSaveTeam);
+
+//////////
+let captainId = null;
+
+document.querySelectorAll('#available-players tr').forEach(row => {
+    console.log(row.dataset.playerId); // Should log the correct playerId
+});
+
+function handleSaveTeam() {
+
+    const startingLineup = Array.from(document.querySelectorAll('#starting-lineup .player-label'))
+        .map(label => label.dataset.playerId)
+        .filter(id => id);
+
+    const bench = Array.from(document.querySelectorAll('#bench .player-label'))
+        .map(label => label.dataset.playerId)
+        .filter(id => id);
+
+    if (!captainId) {
+        alert('Please select a captain.');
+        return;
+    }
+
+    console.log('Sending data:', {
+        userId: "1",
+        teamName: "teamName",
+        startId: startingLineup,
+        benchId: bench,
+        capId: captainId
+    });
+
+    fetch('http://localhost:3000/api/save-team', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            userId: "1",
+            teamName: "teamName",
+            startId: startingLineup,
+            benchId: bench,
+            capId: captainId
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => { throw new Error(text) });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        alert('Team saved successfully!');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save team: ' + error.message);
+    });
+}
+
+
+// Handle player selection and placement
+function selectPlayer(playerId, playerName) {
+    console.log('Selecting player:', playerName); // Debug log
+
+    const startingLineupDiv = document.getElementById('starting-lineup');
+    const benchDiv = document.getElementById('bench');
+
+    if (isPlayerSelected(playerName)) {
+        alert('Player is already selected.');
+        return;
+    }
+
+    let added = false;
+
+    // Try to add player to the starting lineup
+    Array.from(startingLineupDiv.children).some((div) => {
+        if (div instanceof HTMLElement) {
+            const playerLabel = div.querySelector('.player-label');
+            if (playerLabel && playerLabel.dataset.filled === 'false') {
+                playerLabel.textContent = playerName;
+                playerLabel.dataset.filled = 'true'; // Mark this slot as filled
+                playerLabel.dataset.playerId = playerId; // Set player ID
+                selectedPlayers.startingLineup.push(playerId); // Save player ID
+                added = true;
+                console.log(`Added player to starting lineup: ${playerName}`); // Debug log
+                return true; // Stop the loop
+            }
+        }
+        return false; // Continue the loop
+    });
+
+    // If not added to starting lineup, try to add player to the bench
+    if (!added) {
+        Array.from(benchDiv.children).some((div) => {
+            if (div instanceof HTMLElement) {
+                const playerLabel = div.querySelector('.player-label');
+                if (playerLabel && playerLabel.dataset.filled === 'false') {
+                    playerLabel.textContent = playerName;
+                    playerLabel.dataset.filled = 'true'; // Mark this slot as filled
+                    playerLabel.dataset.playerId = playerId; // Set player ID
+                    selectedPlayers.bench.push(playerId); // Save player ID
+                    added = true;
+                    console.log(`Added player to bench: ${playerName}`); // Debug log
+                    return true; // Stop the loop
+                }
+            }
+            return false; // Continue the loop
+        });
+    }
+
+    if (!added) {
+        alert('No available slot for the player.');
+    }
+}
