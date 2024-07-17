@@ -8,22 +8,41 @@
 </head>
 <body>
     <div class="tab">
-        <button class="tablinks" onclick="openTab(event, 'TeamDetails')">Team Details</button>
+        <button class="tablinks" onclick="openTab(event, 'Profile')">Profile</button>
+        <button class="tablinks" onclick="openTab(event, 'TeamDetails')">Pick Team</button>
         <button class="tablinks" onclick="openTab(event, 'Leaderboard')">Leaderboard</button>
-        <button class="tablinks" onclick="openTab(event, 'SelectTeam')">Select Team</button>
+        <button class="tablinks" onclick="openTab(event, 'SelectTeam')">Transfers</button>
+    </div>
+    <div id="Profile" class="tabcontent">
+        <div class="form-wrapper">
+            <div class="form-container" id="loginFormContainer">
+                <h2>Login</h2>
+                <form id="loginForm" method="POST">
+                    <input type="text" id="loginUsername" name="username" placeholder="Username" required>
+                    <input type="password" id="loginPassword" name="password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+                <div class="message" id="loginMessage"></div>
+            </div>
+    
+            <div class="info-text">Don't have an account? Register below:</div>
+    
+            <div class="form-container" id="registerFormContainer">
+                <h2>Register</h2>
+                <form id="registerForm" method="POST">
+                    <input type="text" id="registerUsername" name="username" placeholder="Username" required>
+                    <input type="password" id="registerPassword" name="password" placeholder="Password" required>
+                    <button type="submit">Register</button>
+                </form>
+                <div class="message" id="registerMessage"></div>
+            </div>
+        </div>
     </div>
 
+
     <div id="TeamDetails" class="tabcontent">
-        <h3>Team Details</h3>
-        <table class="styled-table">
-            <thead>
-                <tr>
-                    <th>Team Name</th>
-                    <th>Round Points</th>
-                </tr>
-            </thead>
-            <tbody id="team-details-output"></tbody>
-        </table>
+        <h3>Pick Team</h3>
+        
     </div>
 
     <div id="Leaderboard" class="tabcontent">
@@ -40,7 +59,7 @@
     </div>
 
     <div id="SelectTeam" class="tabcontent">
-        <h3>Select Team</h3>
+        <h3>Transfers</h3>
             <div class="container">
                 <div class="selected-players">
                     <h4>Starting Lineup</h4>

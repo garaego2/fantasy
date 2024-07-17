@@ -412,3 +412,139 @@ function selectPlayer(playerId, playerName) {
         alert('No available slot for the player.');
     }
 }
+
+// Handle Registration
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById('registerUsername').value;
+    const password = document.getElementById('registerPassword').value;
+
+    try {
+        const response = await fetch('http://localhost:3000/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Registration failed');
+        }
+
+        const result = await response.text(); // Assuming the server sends a text response
+        document.getElementById('registerMessage').textContent = 'Registration successful: ' + result;
+    } catch (error) {
+        document.getElementById('registerMessage').textContent = error.message;
+    }
+});
+
+
+// Handle Login
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+        const response = await fetch('http://localhost:3000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Login failed');
+        }
+
+        const result = await response.json();
+        document.getElementById('loginMessage').textContent = 'Login successful.'
+    } catch (error) {
+        document.getElementById('loginMessage').textContent = error.message;
+    }
+});
+
+
+// Fetch the user's team from the server
+async function fetchUserTeam() {
+    const token = localStorage.getItem('authToken'); // Assuming you're storing the auth token in local storage
+
+    try {
+        const response = await fetch('http://localhost:3000/api/user-team', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch user team');
+        }
+
+        const teamData = await response.json();
+        populateTeamData(teamData);
+    } catch (error) {
+        console.error('Error fetching user team:', error);
+        document.getElementById('teamMessage').textContent = 'Error fetching team data';
+    }
+}
+
+// Populate the team display with fetched data
+function populateTeamData(teamData) {
+    const { startingLineup, bench, captainId } = teamData;
+
+    // Clear existing team displays
+    document.querySelectorAll('#starting-lineup .player-display, #bench .player-display').forEach(div => {
+        const playerLabel = div.querySelector('.player-label');
+        if (playerLabel) {
+            playerLabel.textContent = '';
+            playerLabel.dataset.filled = 'false';
+            playerLabel.dataset.playerId = '';
+        }
+    });
+
+    // Populate starting lineup
+    startingLineup.forEach((playerId, index) => {
+        const playerDiv = document.getElementById(`player-starting-lineup-${index}`);
+        if (playerDiv) {
+            const playerLabel = playerDiv.querySelector('.player-label');
+            if (playerLabel) {
+                playerLabel.textContent = playerId; // Assuming you have a way to get player name from ID
+                playerLabel.dataset.filled = 'true';
+                playerLabel.dataset.playerId = playerId;
+            }
+        }
+    });
+
+    // Populate bench
+    bench.forEach((playerId, index) => {
+        const playerDiv = document.getElementById(`player-bench-${index}`);
+        if (playerDiv) {
+            const playerLabel = playerDiv.querySelector('.player-label');
+            if (playerLabel) {
+                playerLabel.textContent = playerId; // Assuming you have a way to get player name from ID
+                playerLabel.dataset.filled = 'true';
+                playerLabel.dataset.playerId = playerId;
+            }
+        }
+    });
+
+    // Set captain
+    const captainDiv = document.querySelector(`#starting-lineup .player-display .player-label[data-player-id="${captainId}"]`);
+    if (captainDiv) {
+        const captainButton = captainDiv.closest('.player-display').querySelector('button.captain-button');
+        if (captainButton) {
+            captainButton.classList.add('captain-selected');
+            selectedPlayers.captainId = captainId;
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    createTeamDisplays();
+    fetchPlayers().then(players => populateFilterOptions(players));
+    fetchUserTeam(); // Fetch user's team data on page load
+});
