@@ -226,8 +226,8 @@ function displayPlayers(players) {
             nationalityCell.textContent = player.nationality;
 
             row.appendChild(nameCell);
-            row.appendChild(pointsCell);
             row.appendChild(nationalityCell);
+            row.appendChild(pointsCell);
 
             row.addEventListener('click', () => {
                 selectPlayer(player.id, player.name); // Ensure playerId is passed here
@@ -466,85 +466,4 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     } catch (error) {
         document.getElementById('loginMessage').textContent = error.message;
     }
-});
-
-
-// Fetch the user's team from the server
-async function fetchUserTeam() {
-    const token = localStorage.getItem('authToken'); // Assuming you're storing the auth token in local storage
-
-    try {
-        const response = await fetch('http://localhost:3000/api/user-team', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch user team');
-        }
-
-        const teamData = await response.json();
-        populateTeamData(teamData);
-    } catch (error) {
-        console.error('Error fetching user team:', error);
-        document.getElementById('teamMessage').textContent = 'Error fetching team data';
-    }
-}
-
-// Populate the team display with fetched data
-function populateTeamData(teamData) {
-    const { startingLineup, bench, captainId } = teamData;
-
-    // Clear existing team displays
-    document.querySelectorAll('#starting-lineup .player-display, #bench .player-display').forEach(div => {
-        const playerLabel = div.querySelector('.player-label');
-        if (playerLabel) {
-            playerLabel.textContent = '';
-            playerLabel.dataset.filled = 'false';
-            playerLabel.dataset.playerId = '';
-        }
-    });
-
-    // Populate starting lineup
-    startingLineup.forEach((playerId, index) => {
-        const playerDiv = document.getElementById(`player-starting-lineup-${index}`);
-        if (playerDiv) {
-            const playerLabel = playerDiv.querySelector('.player-label');
-            if (playerLabel) {
-                playerLabel.textContent = playerId; // Assuming you have a way to get player name from ID
-                playerLabel.dataset.filled = 'true';
-                playerLabel.dataset.playerId = playerId;
-            }
-        }
-    });
-
-    // Populate bench
-    bench.forEach((playerId, index) => {
-        const playerDiv = document.getElementById(`player-bench-${index}`);
-        if (playerDiv) {
-            const playerLabel = playerDiv.querySelector('.player-label');
-            if (playerLabel) {
-                playerLabel.textContent = playerId; // Assuming you have a way to get player name from ID
-                playerLabel.dataset.filled = 'true';
-                playerLabel.dataset.playerId = playerId;
-            }
-        }
-    });
-
-    // Set captain
-    const captainDiv = document.querySelector(`#starting-lineup .player-display .player-label[data-player-id="${captainId}"]`);
-    if (captainDiv) {
-        const captainButton = captainDiv.closest('.player-display').querySelector('button.captain-button');
-        if (captainButton) {
-            captainButton.classList.add('captain-selected');
-            selectedPlayers.captainId = captainId;
-        }
-    }
-}
-document.addEventListener('DOMContentLoaded', () => {
-    createTeamDisplays();
-    fetchPlayers().then(players => populateFilterOptions(players));
-    fetchUserTeam(); // Fetch user's team data on page load
 });
