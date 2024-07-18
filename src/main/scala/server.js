@@ -44,19 +44,12 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Middleware to authenticate the user and set req.user
-function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        return next();
-    } else {
-        res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-}
+
 
 // Get all players
 app.get('/api/players', async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, name, points, nationality FROM player');
+        const result = await pool.query('SELECT id, name, points, nationality, p_points FROM player');
         res.json(result.rows); // Send the results as JSON
     } catch (error) {
         console.error('Error fetching players:', error);

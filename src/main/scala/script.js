@@ -17,9 +17,6 @@ function openTab(evt, tabName) {
     evt.currentTarget.className += " active";
 }
 
-
-//////////
-
 const selectedPlayers = {
     startingLineup: [],
     bench: [],
@@ -63,20 +60,17 @@ function removePlayer(section, index) {
     if (playerDiv) {
         const playerLabel = playerDiv.querySelector('.player-label');
         if (playerLabel && playerLabel.dataset.filled === 'true') {
-            const playerId = playerLabel.dataset.playerId; // Store player ID before clearing
+            const playerId = playerLabel.dataset.playerId; 
             removedPlayers.push({section, index, playerId, playerName: playerLabel.textContent});
 
-            playerLabel.textContent = ''; // Clear player name
-            playerLabel.dataset.filled = 'false'; // Mark slot as empty
-            // Optionally, reset captain status if needed
+            playerLabel.textContent = ''; 
+            playerLabel.dataset.filled = 'false';
             const captainButton = playerDiv.querySelector('button');
             if (captainButton) {
                 captainButton.classList.remove('captain-selected'); // Clear captain class if needed
             }
-            // Remove player from selected lists
             selectedPlayers.startingLineup = selectedPlayers.startingLineup.filter(id => id !== playerId);
             selectedPlayers.bench = selectedPlayers.bench.filter(id => id !== playerId);
-            console.log(`Removed player from ${section}: ${playerLabel.textContent}`); // Debug log
 
             removalCount++;
             if (removalCount > 0) {
@@ -98,20 +92,15 @@ function goBack() {
     if (playerDiv) {
         const playerLabel = playerDiv.querySelector('.player-label');
         if (playerLabel) {
-            playerLabel.textContent = playerName; // Restore player name
-            playerLabel.dataset.filled = 'true'; // Mark slot as filled
-            // Optionally, restore captain status if needed
-            const captainButton = playerDiv.querySelector('button');
-            if (captainButton) {
-                captainButton.classList.add('captain-selected'); // Restore captain class if needed
-            }
+            playerLabel.textContent = playerName; 
+            playerLabel.dataset.filled = 'true'; 
+
             // Add player back to selected lists
             if (section === 'startingLineup') {
                 selectedPlayers.startingLineup.push(playerId);
             } else if (section === 'bench') {
                 selectedPlayers.bench.push(playerId);
             }
-            console.log(`Restored player to ${section}: ${playerName}`); // Debug log
 
             removalCount--;
             if (removalCount < getCurrentTransferLimit()) {
@@ -139,12 +128,11 @@ function selectCaptain(section, index) {
     if (playerDiv) {
         const captainButton = playerDiv.querySelector('button.captain-button');
         if (captainButton) {
-            captainButton.classList.add('captain-selected'); // Highlight the captain button
-            selectedPlayers.captainId = playerDiv.querySelector('.player-label').dataset.playerId; // Update the selected captain ID
+            captainButton.classList.add('captain-selected'); 
+            selectedPlayers.captainId = playerDiv.querySelector('.player-label').dataset.playerId; 
             captainId = playerDiv.querySelector('.player-label').dataset.playerId;
         }
     }
-    console.log(`Captain selected: ${selectedPlayers.captainId}`);
 }
 
 // Create starting lineup and bench display divs
@@ -152,46 +140,55 @@ function createTeamDisplays() {
     const startingLineupCount = 7;
     const benchCount = 6;
 
-    // Create starting lineup slots
     for (let i = 0; i < startingLineupCount; i++) {
         createPlayerDisplay('starting-lineup', i);
     }
 
-    // Create bench slots
     for (let i = 0; i < benchCount; i++) {
         createPlayerDisplay('bench', i);
     }
 }
 
 // Fetch players from the server
-function fetchPlayers(filterNationality = '', sortOrder = 'desc') {
+function fetchPlayers(filterNationality = '', sortOrder = '', sortBy = '') {
     return fetch('http://localhost:3000/api/players')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return response.json(); // Parse as JSON directly
+            return response.json();
         })
         .then(data => {
-            console.log('Fetched players:', data); // Debug log
-
-            // Apply filter if specified
             if (filterNationality) {
                 data = data.filter(player => player.nationality === filterNationality);
             }
 
-            // Sort players based on the selected sort method
-            if (sortOrder === 'asc') {
-                data.sort((a, b) => a.points - b.points);
-            } else {
-                data.sort((a, b) => b.points - a.points);
+            if (sortBy) {
+                const validSortFields = ['points', 'p_points'];
+                if (!validSortFields.includes(sortBy)) {
+                    throw new Error(`Invalid sort field: ${sortBy}`);
+                }
+
+                if (data.length > 0 && !data[0].hasOwnProperty(sortBy)) {
+                    throw new Error(`Sort field '${sortBy}' is missing from player data`);
+                }
+
+                if (sortOrder === 'asc') {
+                    data.sort((a, b) => a[sortBy] - b[sortBy]);
+                } else {
+                    data.sort((a, b) => b[sortBy] - a[sortBy]);
+                }
             }
 
-            displayPlayers(data); // Display the filtered and sorted data
-            return data; // Return the filtered and sorted data
+            displayPlayers(data); 
+            return data; 
         })
-        .catch(error => console.error('Error fetching players:', error));
+        .catch(error => {
+            console.error('Error fetching players:', error);
+            return [];
+        });
 }
+
 
 
 // Populate the player list on the right side
@@ -218,12 +215,16 @@ function displayPlayers(players) {
             const nationalityCell = document.createElement('td');
             nationalityCell.textContent = player.nationality;
 
+            const p_pointsCell = document.createElement('td');
+            p_pointsCell.textContent = player.p_points;
+
             row.appendChild(nameCell);
             row.appendChild(nationalityCell);
             row.appendChild(pointsCell);
+            row.appendChild(p_pointsCell);
 
             row.addEventListener('click', () => {
-                selectPlayer(player.id, player.name); // Ensure playerId is passed here
+                selectPlayer(player.id, player.name); 
             });
 
             availablePlayersTBody.appendChild(row);
@@ -239,7 +240,7 @@ function populateFilterOptions(players) {
     const predefinedNationalities = ['AUS', 'CRO', 'USA', 'ITA', 'JPN'];
 
     // Add predefined options
-    filterSelect.innerHTML = '<option value="">All</option>'; // Reset filter options
+    filterSelect.innerHTML = '<option value="">All</option>';
     predefinedNationalities.forEach(nationality => {
         const option = document.createElement('option');
         option.value = nationality;
@@ -278,7 +279,7 @@ document.getElementById('sort-method').addEventListener('change', (event) => {
 document.querySelector('.container').addEventListener('click', function(event) {
     if (event.target.classList.contains('captain-button')) {
         const button = event.target;
-        const section = button.closest('.player-display').parentElement.id; // Assuming section is parent element id
+        const section = button.closest('.player-display').parentElement.id; 
         const index = Array.from(button.closest('.player-display').parentElement.children).indexOf(button.closest('.player-display'));
         selectCaptain(section, index);
     }
@@ -295,15 +296,12 @@ document.getElementById('save-team-button').addEventListener('click', handleSave
 let captainId = null;
 
 document.querySelectorAll('#available-players tr').forEach(row => {
-    console.log(row.dataset.playerId); // Should log the correct playerId
 });
 
 function handleSaveTeam() {
     // Retrieve userId from session storage
     const userId = sessionStorage.getItem('userId');
     const username = sessionStorage.getItem('username'); 
-    console.log(userId)
-    console.log(username)
     if (!userId) {
         alert('User not logged in.');
         return;
@@ -350,7 +348,6 @@ function handleSaveTeam() {
         return response.json();
     })
     .then(data => {
-        console.log('Success:', data);
         alert('Team saved successfully!');
     })
     .catch(error => {
@@ -362,8 +359,6 @@ function handleSaveTeam() {
 
 // Handle player selection and placement
 function selectPlayer(playerId, playerName) {
-    console.log('Selecting player:', playerName); // Debug log
-
     const startingLineupDiv = document.getElementById('starting-lineup');
     const benchDiv = document.getElementById('bench');
 
@@ -380,15 +375,14 @@ function selectPlayer(playerId, playerName) {
             const playerLabel = div.querySelector('.player-label');
             if (playerLabel && playerLabel.dataset.filled === 'false') {
                 playerLabel.textContent = playerName;
-                playerLabel.dataset.filled = 'true'; // Mark this slot as filled
-                playerLabel.dataset.playerId = playerId; // Set player ID
-                selectedPlayers.startingLineup.push(playerId); // Save player ID
+                playerLabel.dataset.filled = 'true'; 
+                playerLabel.dataset.playerId = playerId;
+                selectedPlayers.startingLineup.push(playerId); 
                 added = true;
-                console.log(`Added player to starting lineup: ${playerName}`); // Debug log
-                return true; // Stop the loop
+                return true; 
             }
         }
-        return false; // Continue the loop
+        return false; 
     });
 
     // If not added to starting lineup, try to add player to the bench
@@ -398,15 +392,14 @@ function selectPlayer(playerId, playerName) {
                 const playerLabel = div.querySelector('.player-label');
                 if (playerLabel && playerLabel.dataset.filled === 'false') {
                     playerLabel.textContent = playerName;
-                    playerLabel.dataset.filled = 'true'; // Mark this slot as filled
-                    playerLabel.dataset.playerId = playerId; // Set player ID
-                    selectedPlayers.bench.push(playerId); // Save player ID
+                    playerLabel.dataset.filled = 'true';
+                    playerLabel.dataset.playerId = playerId; 
+                    selectedPlayers.bench.push(playerId); 
                     added = true;
-                    console.log(`Added player to bench: ${playerName}`); // Debug log
-                    return true; // Stop the loop
+                    return true; 
                 }
             }
-            return false; // Continue the loop
+            return false; 
         });
     }
 
@@ -435,7 +428,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
             throw new Error('Registration failed');
         }
 
-        const result = await response.text(); // Assuming the server sends a text response
+        const result = await response.text(); 
         document.getElementById('registerMessage').textContent = 'Registration successful: ' + result;
     } catch (error) {
         document.getElementById('registerMessage').textContent = error.message;
@@ -464,7 +457,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         }
 
         const result = await response.json();
-        sessionStorage.setItem('userId', result.userId); // Assuming the server response includes userId
+        sessionStorage.setItem('userId', result.userId); 
         sessionStorage.setItem('username', result.username)
         document.getElementById('loginMessage').textContent = 'Login successful!';
 
@@ -480,14 +473,14 @@ function createPlayerDisplay(section, index) {
 
     const playerLabel = document.createElement('span');
     playerLabel.className = 'player-label';
-    playerLabel.dataset.filled = 'false'; // Initialize as not filled
+    playerLabel.dataset.filled = 'false'; 
 
     const captainButton = document.createElement('button');
     captainButton.type = 'button';
     captainButton.textContent = 'Captain';
-    captainButton.className = 'captain-button'; // Add class for styling
+    captainButton.className = 'captain-button'; 
     captainButton.onclick = () => selectCaptain(section, index);
-    captainButton.style.display = section === 'starting-lineup' ? 'inline' : 'none'; // Show only for starting lineup
+    captainButton.style.display = section === 'starting-lineup' ? 'inline' : 'none'; 
 
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
@@ -503,7 +496,7 @@ function createPlayerDisplay(section, index) {
 
 document.addEventListener('DOMContentLoaded', function() {
     function fetchLeaderboardData() {
-      fetch('http://localhost:3000/leaderboard-data') // Specify the full URL
+      fetch('http://localhost:3000/leaderboard-data')
         .then(response => {
           if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -531,4 +524,29 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchLeaderboardData();
   });
   
-  
+  document.addEventListener('DOMContentLoaded', () => {
+    const filterNationality = document.getElementById('filter-nationality');
+    const sortMethod = document.getElementById('sort-method');
+
+    function updatePlayers() {
+        const selectedNationality = filterNationality.value;
+        const selectedSortMethod = sortMethod.value;
+
+        let sortOrder = '';
+        let sortBy = ''; 
+
+        if (selectedSortMethod === 'points-asc' || selectedSortMethod === 'points-desc') {
+            sortBy = 'points';
+            sortOrder = selectedSortMethod.split('-')[1];
+        } else if (selectedSortMethod === 'p_points-asc' || selectedSortMethod === 'p_points-desc') {
+            sortBy = 'p_points';
+            sortOrder = selectedSortMethod.split('-')[1];
+        }
+        fetchPlayers(selectedNationality, sortOrder, sortBy)
+    }
+
+    filterNationality.addEventListener('change', updatePlayers);
+    sortMethod.addEventListener('change', updatePlayers);
+
+    updatePlayers();
+});

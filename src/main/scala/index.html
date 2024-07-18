@@ -63,11 +63,13 @@
                             <option value="">All</option>
                             <!-- Options will be populated dynamically -->
                         </select>
-                
+                    
                         <label for="sort-method">Sort by:</label>
                         <select id="sort-method">
-                            <option value="desc">Points (Descending)</option>
-                            <option value="asc">Points (Ascending)</option>
+                            <option value="">None</option>
+                            <option value="points-asc">Points (Ascending)</option>
+                            <option value="points-desc">Points (Descending)</option>
+                            <option value="p_points-desc">Prev. Points (Descending)</option>
                         </select>
                     </div>
                     <div id="player-container">
@@ -77,6 +79,7 @@
                                     <th>Name</th>
                                     <th>Nationality</th>
                                     <th>Points</th>
+                                    <th>Prev. Points</th>
                                 </tr>
                             </thead>
                             <div class="table-container">
