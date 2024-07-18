@@ -332,3 +332,144 @@ body {
 #available-players tr:hover {
     background-color: #e0e0e0;
 }
+
+.save-button {
+    background: linear-gradient(135deg, #4CAF50, #45a049); /* Gradient background */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    color: white; /* Text color */
+    padding: 10px 20px; /* Padding for size */
+    font-size: 16px; /* Font size */
+    font-weight: bold; /* Bold text */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+    text-transform: uppercase; /* Uppercase text */
+    margin-right: 8px; /* Space between icon and text */
+}
+
+/* Hover effect */
+.save-button:hover {
+    background: linear-gradient(135deg, #45a049, #4CAF50); /* Inverted gradient */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Stronger shadow */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+/* Focus effect */
+.save-button:focus {
+    outline: none; /* Remove default outline */
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5); /* Add custom focus ring */
+}
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.save-button:active {
+    animation: pulse 0.2s ease; /* Pulse effect on click */
+}
+
+
+/* Form Container */
+.form-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 100%;
+    padding: 20px;
+    margin: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.info-text {
+    margin: 100px 0 40px 0;
+    text-align: left;
+}
+/* Form Header */
+.form-container h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+/* Form Inputs */
+input[type="text"],
+input[type="password"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#loginFormContainer button,
+#registerFormContainer button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#loginFormContainer button:hover,
+#registerFormContainer button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+#loginFormContainer button:active,
+#registerFormContainer button:active {
+    background-color: #004494; /* Darker shade on click */
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Message Display */
+.message {
+    margin-top: 10px;
+    color: #d9534f;
+    font-size: 14px;
+}
+
+
+
+
+#go-back-button {
+    display: none; /* Initially hidden; will be shown via JavaScript */
+    background-color: #007bff; /* Primary blue color for the button */
+    color: white; /* White text for contrast */
+    border: none; /* Remove default border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 10px 20px; /* Space inside the button */
+    font-size: 16px; /* Adjust font size */
+    cursor: pointer; /* Show a pointer cursor on hover */
+    transition: background-color 0.3s, transform 0.2s; /* Smooth transitions for hover effects */
+}
+
+#go-back-button:hover {
+    background-color: #0056b3; /* Darker blue for hover effect */
+}
+
+#go-back-button:active {
+    transform: scale(0.98); /* Slightly shrink the button on click */
+}
+
+#go-back-button:focus {
+    outline: none; /* Remove default focus outline */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Add custom focus style */
+}

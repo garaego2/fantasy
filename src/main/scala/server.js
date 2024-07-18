@@ -108,7 +108,7 @@ app.post('/login', async (req, res) => {
                 }
 
                 const token = jwt.sign({ id: user.user_id, username: user.username }, 'your_jwt_secret', { expiresIn: '1h' });
-                res.json({ token, userId: user.user_id });
+                res.json({ token, userId: user.user_id, username });
             });
         } else {
             res.status(401).send('Invalid credentials');
@@ -193,6 +193,30 @@ passport.deserializeUser(async (id, done) => {
         done(error); // Pass any database errors to done
     }
 });
+
+// Route to render leaderboard
+app.get('/leaderboard-data', (req, res) => {
+  pool.connect((err, client, done) => {
+    if (err) {
+      console.error('Error connecting to PostgreSQL database', err);
+      res.status(500).json({ error: 'Error connecting to database' });
+    } else {
+      client.query('SELECT team_name, points FROM user_teams ORDER BY points DESC', (err, result) => {
+        done(); // Release client back to the pool
+        if (err) {
+          console.error('Error executing query', err);
+          res.status(500).json({ error: 'Error fetching data' });
+        } else {
+          const leaderboardData = result.rows;
+          res.json({ leaderboardData });
+        }
+      });
+    }
+  });
+});
+
+// Serve static files from the 'public' directory
+app.use(express.static('public'));
 
 // Start the server
 const PORT = process.env.PORT || 3000;

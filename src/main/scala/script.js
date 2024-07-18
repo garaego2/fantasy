@@ -1,23 +1,3 @@
-// Fetch and display leaderboard and team results
-fetch("team_results.json")
-  .then(response => response.json())
-  .then(results => {
-    let leaderboardPlaceholder = document.querySelector("#leaderboard-output");
-    let leaderboardOut = "";
-
-    // Display leaderboard
-    for (let team of results.leaderboard) {
-      leaderboardOut += `
-        <tr>
-          <td>${team["Team Name"]}</td>
-          <td>${team["Total Points"]}</td>
-        </tr>
-      `;
-    }
-    leaderboardPlaceholder.innerHTML = leaderboardOut;
-
-  })
-  .catch(error => console.error('Error loading team results:', error));
 
 // Function to handle tab switching
 function openTab(evt, tabName) {
@@ -321,8 +301,9 @@ document.querySelectorAll('#available-players tr').forEach(row => {
 function handleSaveTeam() {
     // Retrieve userId from session storage
     const userId = sessionStorage.getItem('userId');
-    const teamName = sessionStorage.getItem('username'); // Assuming you have an input for teamName
+    const username = sessionStorage.getItem('username'); 
     console.log(userId)
+    console.log(username)
     if (!userId) {
         alert('User not logged in.');
         return;
@@ -343,7 +324,7 @@ function handleSaveTeam() {
 
     console.log('Sending data:', {
         userId: userId,
-        teamName: teamName,
+        teamName: username,
         startId: startingLineup,
         benchId: bench,
         capId: captainId
@@ -356,7 +337,7 @@ function handleSaveTeam() {
         },
         body: JSON.stringify({
             userId: userId,
-            teamName: teamName,
+            teamName: username,
             startId: startingLineup,
             benchId: bench,
             capId: captainId
@@ -484,6 +465,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
         const result = await response.json();
         sessionStorage.setItem('userId', result.userId); // Assuming the server response includes userId
+        sessionStorage.setItem('username', result.username)
         document.getElementById('loginMessage').textContent = 'Login successful!';
 
     } catch (error) {
@@ -518,3 +500,35 @@ function createPlayerDisplay(section, index) {
 
     document.getElementById(section).appendChild(container);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    function fetchLeaderboardData() {
+      fetch('http://localhost:3000/leaderboard-data') // Specify the full URL
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          const leaderboardOutput = document.getElementById('leaderboard-output');
+          leaderboardOutput.innerHTML = '';
+  
+          data.leaderboardData.forEach(team => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${team.team_name}</td>
+              <td>${team.points}</td>
+            `;
+            leaderboardOutput.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching leaderboard data:', error);
+        });
+    }
+  
+    fetchLeaderboardData();
+  });
+  
+  
