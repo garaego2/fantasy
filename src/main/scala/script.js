@@ -3,9 +3,7 @@ fetch("team_results.json")
   .then(response => response.json())
   .then(results => {
     let leaderboardPlaceholder = document.querySelector("#leaderboard-output");
-    let teamDetailsPlaceholder = document.querySelector("#team-details-output");
     let leaderboardOut = "";
-    let teamDetailsOut = "";
 
     // Display leaderboard
     for (let team of results.leaderboard) {
@@ -18,33 +16,6 @@ fetch("team_results.json")
     }
     leaderboardPlaceholder.innerHTML = leaderboardOut;
 
-    // Display team details
-    for (let team of results.team_results) {
-      teamDetailsOut += `
-        <tr>
-            <td colspan="14"></td>
-        </tr>
-        <tr>
-            <td class="bold">${team["Team Name"]}</td>
-            <td>${team["Total Points"]}</td>
-        </tr>
-        <tr>
-            <td colspan="2">Players:</td>
-        </tr>
-      `;
-
-      // Loop through the Players object
-      for (let player in team.Players) {
-        let captainMark = (team["Captain"] === player) ? " (C)" : ""; // Add (C) next to the captain's name
-        teamDetailsOut += `
-            <tr>
-                <td>${player}${captainMark}</td>
-                <td>${team.Players[player]}</td>
-            </tr>
-        `;
-      }
-    }
-    teamDetailsPlaceholder.innerHTML = teamDetailsOut;
   })
   .catch(error => console.error('Error loading team results:', error));
 
@@ -81,42 +52,40 @@ function isPlayerSelected(playerName) {
     return Array.from(selectedPlayers).some(label => label.textContent === playerName);
 }
 
-// Create player display divs instead of input fields
-function createPlayerDisplay(section, index) {
-    const container = document.createElement('div');
-    container.className = 'player-display';
-    container.id = `player-${section}-${index}`;
 
-    const playerLabel = document.createElement('span');
-    playerLabel.className = 'player-label';
-    playerLabel.dataset.filled = 'false'; // Initialize as not filled
+let removalCount = 0;
+const removalLimit = 2;
+const removedPlayers = [];
 
-    const captainButton = document.createElement('button');
-    captainButton.type = 'button';
-    captainButton.textContent = 'Captain';
-    captainButton.className = 'captain-button'; // Add class for styling
-    captainButton.onclick = () => selectCaptain(section, index);
-    captainButton.style.display = section === 'starting-lineup' ? 'inline' : 'none'; // Show only for starting lineup
+const transferStartDate1 = new Date('July 28, 2024 15:00:00');
+const transferEndDate1 = new Date('August 1, 2024 16:00:00');
+const unlimitedTransfersEnd = transferStartDate1;
+const limitedTransfersStart = transferEndDate1;
 
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.textContent = 'Remove';
-    removeButton.onclick = () => removePlayer(section, index);
-
-    container.appendChild(playerLabel);
-    container.appendChild(captainButton);
-    container.appendChild(removeButton);
-
-    document.getElementById(section).appendChild(container);
+function getCurrentTransferLimit() {
+    const now = new Date();
+    if (now < unlimitedTransfersEnd) {
+        return Infinity; // Unlimited transfers
+    } else if (now >= unlimitedTransfersEnd) {
+        return removalLimit; // Limited transfers
+    }
 }
 
-// Remove player from the lineup or bench
 function removePlayer(section, index) {
+    const currentTransferLimit = getCurrentTransferLimit();
+
+    if (removalCount >= currentTransferLimit) {
+        document.getElementById('removal-limit-message').style.display = 'block';
+        return;
+    }
+
     const playerDiv = document.getElementById(`player-${section}-${index}`);
     if (playerDiv) {
         const playerLabel = playerDiv.querySelector('.player-label');
         if (playerLabel && playerLabel.dataset.filled === 'true') {
             const playerId = playerLabel.dataset.playerId; // Store player ID before clearing
+            removedPlayers.push({section, index, playerId, playerName: playerLabel.textContent});
+
             playerLabel.textContent = ''; // Clear player name
             playerLabel.dataset.filled = 'false'; // Mark slot as empty
             // Optionally, reset captain status if needed
@@ -128,9 +97,53 @@ function removePlayer(section, index) {
             selectedPlayers.startingLineup = selectedPlayers.startingLineup.filter(id => id !== playerId);
             selectedPlayers.bench = selectedPlayers.bench.filter(id => id !== playerId);
             console.log(`Removed player from ${section}: ${playerLabel.textContent}`); // Debug log
+
+            removalCount++;
+            if (removalCount > 0) {
+                document.getElementById('go-back-button').style.display = 'inline-block';
+            }
+            if (removalCount >= currentTransferLimit) {
+                document.getElementById('removal-limit-message').style.display = 'block';
+            }
         }
     }
 }
+
+function goBack() {
+    if (removedPlayers.length === 0) return;
+
+    const lastRemoved = removedPlayers.pop();
+    const { section, index, playerId, playerName } = lastRemoved;
+    const playerDiv = document.getElementById(`player-${section}-${index}`);
+    if (playerDiv) {
+        const playerLabel = playerDiv.querySelector('.player-label');
+        if (playerLabel) {
+            playerLabel.textContent = playerName; // Restore player name
+            playerLabel.dataset.filled = 'true'; // Mark slot as filled
+            // Optionally, restore captain status if needed
+            const captainButton = playerDiv.querySelector('button');
+            if (captainButton) {
+                captainButton.classList.add('captain-selected'); // Restore captain class if needed
+            }
+            // Add player back to selected lists
+            if (section === 'startingLineup') {
+                selectedPlayers.startingLineup.push(playerId);
+            } else if (section === 'bench') {
+                selectedPlayers.bench.push(playerId);
+            }
+            console.log(`Restored player to ${section}: ${playerName}`); // Debug log
+
+            removalCount--;
+            if (removalCount < getCurrentTransferLimit()) {
+                document.getElementById('removal-limit-message').style.display = 'none';
+            }
+            if (removalCount === 0) {
+                document.getElementById('go-back-button').style.display = 'none';
+            }
+        }
+    }
+}
+
 
 // Select captain for a slot
 function selectCaptain(section, index) {
@@ -306,6 +319,14 @@ document.querySelectorAll('#available-players tr').forEach(row => {
 });
 
 function handleSaveTeam() {
+    // Retrieve userId from session storage
+    const userId = sessionStorage.getItem('userId');
+    const teamName = sessionStorage.getItem('username'); // Assuming you have an input for teamName
+    console.log(userId)
+    if (!userId) {
+        alert('User not logged in.');
+        return;
+    }
 
     const startingLineup = Array.from(document.querySelectorAll('#starting-lineup .player-label'))
         .map(label => label.dataset.playerId)
@@ -321,8 +342,8 @@ function handleSaveTeam() {
     }
 
     console.log('Sending data:', {
-        userId: "1",
-        teamName: "teamName",
+        userId: userId,
+        teamName: teamName,
         startId: startingLineup,
         benchId: bench,
         capId: captainId
@@ -334,8 +355,8 @@ function handleSaveTeam() {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            userId: "1",
-            teamName: "teamName",
+            userId: userId,
+            teamName: teamName,
             startId: startingLineup,
             benchId: bench,
             capId: captainId
@@ -462,8 +483,38 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         }
 
         const result = await response.json();
-        document.getElementById('loginMessage').textContent = 'Login successful.'
+        sessionStorage.setItem('userId', result.userId); // Assuming the server response includes userId
+        document.getElementById('loginMessage').textContent = 'Login successful!';
+
     } catch (error) {
         document.getElementById('loginMessage').textContent = error.message;
     }
 });
+
+function createPlayerDisplay(section, index) {
+    const container = document.createElement('div');
+    container.className = 'player-display';
+    container.id = `player-${section}-${index}`;
+
+    const playerLabel = document.createElement('span');
+    playerLabel.className = 'player-label';
+    playerLabel.dataset.filled = 'false'; // Initialize as not filled
+
+    const captainButton = document.createElement('button');
+    captainButton.type = 'button';
+    captainButton.textContent = 'Captain';
+    captainButton.className = 'captain-button'; // Add class for styling
+    captainButton.onclick = () => selectCaptain(section, index);
+    captainButton.style.display = section === 'starting-lineup' ? 'inline' : 'none'; // Show only for starting lineup
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.textContent = 'Remove';
+    removeButton.onclick = () => removePlayer(section, index);
+
+    container.appendChild(playerLabel);
+    container.appendChild(captainButton);
+    container.appendChild(removeButton);
+
+    document.getElementById(section).appendChild(container);
+}
