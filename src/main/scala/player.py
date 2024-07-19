@@ -1,119 +1,121 @@
 import pandas as pd
-import glob
-import json
 import os
-from datetime import datetime
-from flask import Flask, request, jsonify
+import glob
+from flask import Flask, jsonify
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 
 app = Flask(__name__)
 
+def process_and_upsert_data(engine, file_pattern):
+    try:
+        # Use glob to find all files matching the pattern
+        file_paths = glob.glob(file_pattern)
+        
+        if not file_paths:
+            raise FileNotFoundError("No files found matching the pattern.")
 
-def get_files_downloaded_today(path):
-    today = datetime.today().date()
-    files_today = []
-    for filename in os.listdir(path):
-        file_path = os.path.join(path, filename)
-        file_time = datetime.fromtimestamp(os.path.getctime(file_path)).date()
-        if file_time == today:
-            files_today.append(file_path)
-    return files_today
+        # Read and concatenate all CSV files into a single DataFrame
+        combined_df = pd.concat((pd.read_csv(file_path, delimiter=';') for file_path in file_paths), ignore_index=True)
 
+        # Print the combined DataFrame for debugging
+        print("Combined DataFrame:")
+        print(combined_df.head())
 
-directory_path = '/Users/egor/Downloads/'
-file_pattern = 'player_stats_*.csv'
+        # Aggregate data by player
+        aggregated_df = combined_df.groupby('PLAYER').agg({
+            'GOALS': 'sum',
+            'PF DRAWN': 'sum',
+            'SWIMOFFS': 'sum',
+            'BLOCKS': 'sum',
+            'ASSISTS': 'sum',
+            'STEALS': 'sum',
+            'PERSONAL FOULS': 'sum',
+            'ATTEMPTS': 'sum',
+            'OFFENSIVE FOULS': 'sum',
+            'BALLS LOST': 'sum',
+            'SAVES': 'sum'
+        }).reset_index()
 
-today_files = get_files_downloaded_today(directory_path)
-combined_df = pd.DataFrame()
-file_list = glob.glob(directory_path + file_pattern)
+        # Print the aggregated DataFrame for debugging
+        print("Aggregated DataFrame:")
+        print(aggregated_df.head())
 
-for file in file_list:
-    df = pd.read_csv(file, delimiter=';')
-    combined_df = pd.concat([combined_df, df], ignore_index=True)
+        # Calculate 'Weighted_Score' and 'Points'
+        aggregated_df['Weighted_Score'] = (
+            (aggregated_df['GOALS'] * 6) + 
+            2 * (aggregated_df['PF DRAWN'] + aggregated_df['SWIMOFFS'] +
+                 aggregated_df['BLOCKS'] + aggregated_df['ASSISTS'] +
+                 aggregated_df['STEALS']) - 
+            aggregated_df['PERSONAL FOULS'] - 
+            aggregated_df['ATTEMPTS'] - 
+            aggregated_df['OFFENSIVE FOULS'] - 
+            aggregated_df['BALLS LOST']
+        )
+        aggregated_df.loc[aggregated_df['PLAYER'].isin([1, 13]), 'Weighted_Score'] = (
+            aggregated_df['GOALS'] * 33 + aggregated_df['SAVES']
+        )
+        aggregated_df['Points'] = aggregated_df['Weighted_Score']
 
-combined_df['Weighted_Score'] = (combined_df['GOALS'] * 6) + 2 * (combined_df['PF DRAWN'] + combined_df['SWIMOFFS'] +
-                                                                  combined_df['BLOCKS'] + combined_df['ASSISTS'] +
-                                                                  combined_df['STEALS']) \
-                                - combined_df['PERSONAL FOULS'] - combined_df['ATTEMPTS'] \
-                                - combined_df['OFFENSIVE FOULS'] - combined_df['BALLS LOST']
-combined_df.loc[combined_df['#'].isin([1, 13]), 'Weighted_Score'] = (
-        combined_df['GOALS'] * 33 + combined_df['SAVES'])
+        # Print final DataFrame before database update
+        print("Final DataFrame with Points:")
+        print(aggregated_df.head())
 
-teams = {}
+        # Create a session to interact with the database
+        Session = sessionmaker(bind=engine)
+        session = Session()
 
+        # Iterate through the aggregated DataFrame rows
+        for _, row in aggregated_df.iterrows():
+            player_name = row['PLAYER']
+            points = row['Points']
+            
+            # Update the player's points in the database
+            session.execute(
+                text(
+                    "UPDATE player SET p_points = :points WHERE name = :name"
+                ),
+                {"points": points, "name": player_name}
+            )
+        
+        # Commit the transaction
+        session.commit()
 
-@app.route('/save_team', methods=['POST'])
-def save_team():
-    data = request.get_json()
-    team_name = data['teamName']
-    starting_lineup = data['startingLineup']
-    bench = data['bench']
-    captain = data['captain']
+        # Close the session
+        session.close()
 
-    teams[team_name] = {
-        'starting_lineup': starting_lineup,
-        'bench': bench,
-        'captain': captain
-    }
-
-    # Save to JSON file
-    with open('teams.json', 'w') as file:
-        json.dump(teams, file, indent=4)
-
-    return jsonify({'message': 'Team saved successfully!'})
-
-
-def calculate_team_points():
-    team_results = []
-    for team_name, details in teams.items():
-        player_list = details['starting_lineup'] + details['bench']
-        captain_name = details['captain']
-        team_df = combined_df[combined_df['PLAYER'].isin(player_list)]
-        points_per_player = team_df.groupby('PLAYER')['Weighted_Score'].sum()
-        total_points = points_per_player.sum()
-        if captain_name in points_per_player:
-            captain_points = points_per_player[captain_name]
-            total_points += captain_points
-            points_per_player[captain_name] = captain_points * 2
-        else:
-            captain_points = 0
-        team_result = {
-            'Team Name': team_name,
-            'Total Points': total_points,
-            'Players': points_per_player.to_dict(),
-            'Captain Points': captain_points * 2,
-            'Captain': captain_name
-        }
-        team_results.append(team_result)
-    return team_results
-
-
-@app.route('/leaderboard', methods=['GET'])
-def get_leaderboard():
-    team_results = calculate_team_points()
-    sorted_team_results = sorted(team_results, key=lambda x: x['Total Points'], reverse=True)
-    return jsonify(sorted_team_results)
+        return aggregated_df
+    except Exception as e:
+        print(f"Error processing data: {e}")
+        raise
 
 
-def convert_to_serializable(obj):
-    if pd.api.types.is_integer_dtype(obj):
-        return int(obj)
-    elif pd.api.types.is_float_dtype(obj):
-        return float(obj)
-    else:
-        return obj
+@app.route('/process-data', methods=['POST'])
+def process_data():
+    
+    try:
+        file_pattern = "/Users/egor/Downloads/player_stats_*.csv"  # Pattern to match all CSV files
 
+        # Database credentials from environment variables
+        db_username = os.getenv('DB_USER', 'postgres')
+        db_password = os.getenv('DB_PASSWORD', 'Sinitiaisenpolku1')
+        db_host = os.getenv('DB_HOST', 'localhost')
+        db_port = int(os.getenv('DB_PORT', 5432))
+        db_name = os.getenv('DB_NAME', 'players')
 
-def generate_leaderboard(team_results):
-    scores = []
-    for team in team_results:
-        scores.append({
-            'Team Name': team['Team Name'],
-            'Total Points': convert_to_serializable(team['Total Points'])
-        })
-    return sorted(scores, key=lambda x: x['Total Points'], reverse=True)
+        # Create database engine
+        engine = create_engine(f'postgresql+psycopg2://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}')
+        
+        # Process and upsert data
+        aggregated_df = process_and_upsert_data(engine, file_pattern)
 
+        # Optionally return some of the aggregated data for verification
+        return jsonify({
+            "message": "Data processed and upserted successfully.",
+            "data": aggregated_df.head().to_dict(orient='records')  # Return a sample of the DataFrame
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-

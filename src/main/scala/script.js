@@ -1,4 +1,3 @@
-
 // Function to handle tab switching
 function openTab(evt, tabName) {
     let i, tabcontent, tablinks;
@@ -17,11 +16,7 @@ function openTab(evt, tabName) {
     evt.currentTarget.className += " active";
 }
 
-const selectedPlayers = {
-    startingLineup: [],
-    bench: [],
-    captainId: null
-};
+
 
 // Check if the player is already selected
 function isPlayerSelected(playerName) {
@@ -550,3 +545,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updatePlayers();
 });
+
+fetch('http://localhost:3000/process-data')
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch(error => console.error('Error:', error));

@@ -8,6 +8,9 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 const passport = require('passport');
+const fs = require('fs');
+const glob = require('glob');
+const csv = require('csv-parser');
 
 // Load environment variables
 dotenv.config();
@@ -112,10 +115,9 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// Save team route (requires authentication)
-// Example of removing authentication requirement for /api/save-team
+// Save team route 
 app.post('/api/save-team', async (req, res) => {
-  const { startId, benchId, capId, teamName, userId } = req.body; // Ensure userId is passed from client
+  const { startId, benchId, capId, teamName, userId } = req.body; 
 
   try {
       const query = `
@@ -131,7 +133,7 @@ app.post('/api/save-team', async (req, res) => {
       `;
 
       const result = await pool.query(query, [
-          userId, // Use userId passed from client
+          userId, 
           JSON.stringify(startId),
           JSON.stringify(benchId),
           capId,
@@ -181,9 +183,9 @@ passport.deserializeUser(async (id, done) => {
     try {
         const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [id]);
         const user = result.rows[0];
-        done(null, user); // Deserialize the user object
+        done(null, user); 
     } catch (error) {
-        done(error); // Pass any database errors to done
+        done(error); 
     }
 });
 
@@ -195,7 +197,7 @@ app.get('/leaderboard-data', (req, res) => {
       res.status(500).json({ error: 'Error connecting to database' });
     } else {
       client.query('SELECT team_name, points FROM user_teams ORDER BY points DESC', (err, result) => {
-        done(); // Release client back to the pool
+        done(); 
         if (err) {
           console.error('Error executing query', err);
           res.status(500).json({ error: 'Error fetching data' });
@@ -210,6 +212,128 @@ app.get('/leaderboard-data', (req, res) => {
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
+async function processAndUpsertData(client, filePattern) {
+  try {
+    // Use glob to find all files matching the pattern
+    const filePaths = glob.sync(filePattern);
+
+    if (filePaths.length === 0) {
+      throw new Error('No files found matching the pattern.');
+    }
+
+    // Read and concatenate all CSV files into a single array
+    let combinedData = [];
+    for (const filePath of filePaths) {
+      const data = await new Promise((resolve, reject) => {
+        const results = [];
+        fs.createReadStream(filePath)
+          .pipe(csv({ separator: ';' }))
+          .on('data', (data) => results.push(data))
+          .on('end', () => resolve(results))
+          .on('error', (error) => reject(error));
+      });
+      combinedData = combinedData.concat(data);
+    }
+
+    // Print the combined data for debugging
+    console.log('Combined Data:');
+    console.log(combinedData.slice(0, 5));
+
+    // Aggregate data by player
+    const aggregatedData = combinedData.reduce((acc, row) => {
+      const player = row['PLAYER'];
+      if (!acc[player]) {
+        acc[player] = {
+          GOALS: 0,
+          'PF DRAWN': 0,
+          SWIMOFFS: 0,
+          BLOCKS: 0,
+          ASSISTS: 0,
+          STEALS: 0,
+          'PERSONAL FOULS': 0,
+          ATTEMPTS: 0,
+          'OFFENSIVE FOULS': 0,
+          'BALLS LOST': 0,
+          SAVES: 0
+        };
+      }
+      for (const key in acc[player]) {
+        acc[player][key] += parseInt(row[key]) || 0;
+      }
+      return acc;
+    }, {});
+
+    const aggregatedArray = Object.keys(aggregatedData).map(player => {
+      return { PLAYER: player, ...aggregatedData[player] };
+    });
+
+    // Print the aggregated data for debugging
+    console.log('Aggregated Data:');
+    console.log(aggregatedArray.slice(0, 5));
+
+    // Calculate 'Weighted_Score' and 'Points'
+    aggregatedArray.forEach(row => {
+      row.Weighted_Score = (
+        (row.GOALS * 6) +
+        2 * (row['PF DRAWN'] + row.SWIMOFFS + row.BLOCKS + row.ASSISTS + row.STEALS) -
+        row['PERSONAL FOULS'] -
+        row.ATTEMPTS -
+        row['OFFENSIVE FOULS'] -
+        row['BALLS LOST']
+      );
+      if (['1', '13'].includes(row.PLAYER)) {
+        row.Weighted_Score = (row.GOALS * 33 + row.SAVES);
+      }
+      row.Points = row.Weighted_Score;
+    });
+
+    // Print final data before database update
+    console.log('Final Data with Points:');
+    console.log(aggregatedArray.slice(0, 5));
+
+    // Update the player's points in the database
+    for (const row of aggregatedArray) {
+      const playerName = row.PLAYER;
+      const points = row.Points;
+
+      await client.query(
+        'UPDATE player SET p_points = $1 WHERE name = $2',
+        [points, playerName]
+      );
+    }
+
+    return aggregatedArray;
+  } catch (error) {
+    console.error('Error processing data:', error);
+    throw error;
+  }
+}
+
+module.exports = processAndUpsertData;
+app.get('/process-data', (req, res) => {
+  pool.connect((err, client, done) => {
+    if (err) {
+      console.error('Error connecting to PostgreSQL database', err);
+      res.status(500).json({ error: 'Error connecting to database' });
+    } else {
+      const filePattern = '/Users/egor/Downloads/player_stats_*.csv';  // Pattern to match all CSV files
+
+      processAndUpsertData(client, filePattern)
+        .then((aggregatedData) => {
+          done();
+          res.status(200).json({
+            message: 'Data processed and upserted successfully.',
+            data: aggregatedData.slice(0, 5)  // Return a sample of the data
+          });
+        })
+        .catch((error) => {
+          done();
+          console.error('Error processing data', error);
+          res.status(500).json({ error: 'Error processing data' });
+        });
+    }
+  });
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
