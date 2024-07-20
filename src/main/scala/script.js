@@ -232,7 +232,7 @@ function displayPlayers(players) {
 
 function populateFilterOptions(players) {
     const filterSelect = document.getElementById('filter-nationality');
-    const predefinedNationalities = ['AUS', 'CRO', 'USA', 'ITA', 'JPN'];
+    const predefinedNationalities = ['AUS', 'CRO', 'FRA', 'GRE', 'HUN', 'ITA', 'JPN', 'MNE', 'ROU', 'SRB', 'SPA', 'USA'];
 
     // Add predefined options
     filterSelect.innerHTML = '<option value="">All</option>';

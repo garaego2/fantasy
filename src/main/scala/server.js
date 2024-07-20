@@ -209,10 +209,10 @@ app.get('/leaderboard-data', (req, res) => {
     }
   });
 });
-
+/*
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
-async function processAndUpsertData(client, filePattern) {
+async function processAndUpsertData(client, filePattern, roundIdentifier) {
   try {
     // Use glob to find all files matching the pattern
     const filePaths = glob.sync(filePattern);
@@ -235,15 +235,12 @@ async function processAndUpsertData(client, filePattern) {
       combinedData = combinedData.concat(data);
     }
 
-    // Print the combined data for debugging
-    console.log('Combined Data:');
-    console.log(combinedData.slice(0, 5));
-
     // Aggregate data by player
     const aggregatedData = combinedData.reduce((acc, row) => {
       const player = row['PLAYER'];
       if (!acc[player]) {
         acc[player] = {
+          '#': row['#'], 
           GOALS: 0,
           'PF DRAWN': 0,
           SWIMOFFS: 0,
@@ -258,48 +255,56 @@ async function processAndUpsertData(client, filePattern) {
         };
       }
       for (const key in acc[player]) {
-        acc[player][key] += parseInt(row[key]) || 0;
+        if (key !== '#') { 
+          acc[player][key] += parseInt(row[key]) || 0;
+        }
       }
       return acc;
     }, {});
-
+    
     const aggregatedArray = Object.keys(aggregatedData).map(player => {
       return { PLAYER: player, ...aggregatedData[player] };
     });
 
-    // Print the aggregated data for debugging
-    console.log('Aggregated Data:');
-    console.log(aggregatedArray.slice(0, 5));
-
     // Calculate 'Weighted_Score' and 'Points'
     aggregatedArray.forEach(row => {
-      row.Weighted_Score = (
-        (row.GOALS * 6) +
-        2 * (row['PF DRAWN'] + row.SWIMOFFS + row.BLOCKS + row.ASSISTS + row.STEALS) -
-        row['PERSONAL FOULS'] -
-        row.ATTEMPTS -
-        row['OFFENSIVE FOULS'] -
-        row['BALLS LOST']
-      );
-      if (['1', '13'].includes(row.PLAYER)) {
-        row.Weighted_Score = (row.GOALS * 33 + row.SAVES);
+      if ([1, 13].includes(parseInt(row['#']))) { 
+        row.Weighted_Score = (row.GOALS * 33) + row.SAVES;
+      } else {
+        // General calculation for other players
+        row.Weighted_Score = (
+          (row.GOALS * 6) +
+          2 * (row['PF DRAWN'] + row.SWIMOFFS + row.BLOCKS + row.ASSISTS + row.STEALS) -
+          row['PERSONAL FOULS'] -
+          row.ATTEMPTS -
+          row['OFFENSIVE FOULS'] -
+          row['BALLS LOST']
+        );
       }
       row.Points = row.Weighted_Score;
     });
 
-    // Print final data before database update
-    console.log('Final Data with Points:');
-    console.log(aggregatedArray.slice(0, 5));
+    // Fetch existing points and processed rounds from the database
+    const playerPoints = await client.query('SELECT name, points, processed_rounds FROM player');
+
+    const playerMap = playerPoints.rows.reduce((acc, player) => {
+      acc[player.name] = { points: player.points || 0, processed_rounds: player.processed_rounds || [] };
+      return acc;
+    }, {});
 
     // Update the player's points in the database
     for (const row of aggregatedArray) {
       const playerName = row.PLAYER;
-      const points = row.Points;
+      const newPoints = row.Points;
 
-      await client.query(
-        'UPDATE player SET p_points = $1 WHERE name = $2',
-        [points, playerName]
-      );
+      if (!playerMap[playerName].processed_rounds.includes(roundIdentifier)) {
+        const totalPoints = playerMap[playerName].points + newPoints;
+
+        await client.query(
+          'UPDATE player SET points = $1, processed_rounds = processed_rounds || $2::jsonb WHERE name = $3',
+          [totalPoints, JSON.stringify([roundIdentifier]), playerName]
+        );
+      }
     }
 
     return aggregatedArray;
@@ -318,7 +323,7 @@ app.get('/process-data', (req, res) => {
     } else {
       const filePattern = '/Users/egor/Downloads/player_stats_*.csv';  // Pattern to match all CSV files
 
-      processAndUpsertData(client, filePattern)
+      processAndUpsertData(client, filePattern, roundIdentifier)
         .then((aggregatedData) => {
           done();
           res.status(200).json({
@@ -334,6 +339,7 @@ app.get('/process-data', (req, res) => {
     }
   });
 });
+*/
 
 // Start the server
 const PORT = process.env.PORT || 3000;
