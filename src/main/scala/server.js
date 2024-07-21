@@ -29,7 +29,10 @@ const pool = new Pool({
 
 const app = express();
 app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' https://fantasy-uo2b.onrender.com 'nonce-xyz456...'; style-src 'self' 'nonce-xyz456...'; img-src 'self' data:; connect-src 'self' blob:;");
+  const nonce = crypto.randomBytes(16).toString('base64');
+  res.locals.nonce = nonce; // Store nonce in res.locals to use it in templates if needed
+
+  res.setHeader("Content-Security-Policy", `default-src 'self'; script-src 'self' https://fantasy-uo2b.onrender.com 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'; img-src 'self' data:; connect-src 'self' https://fantasy-uo2b.onrender.com blob:;`);
   next();
 });
 app.use(cors());
