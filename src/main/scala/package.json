@@ -1,0 +1,15 @@
+{
+  "name": "fantasy",
+  "version": "1.0.0",
+  "description": "Water polo fantasy website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {},
+  "author": "Egor",
+  "license": "ISC"
+}
