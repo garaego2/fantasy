@@ -17,11 +17,12 @@ dotenv.config();
 
 // PostgreSQL client setup
 const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'players',
-    password: process.env.DB_PASSWORD || 'Sinitiaisenpolku1',
-    port: process.env.DB_PORT || 5432,
+    user: 'players_owner',
+    host: 'ep-orange-tooth-a2q7flpt.eu-central-1.aws.neon.tech',
+    database: 'players',
+    password: 'IlHmQxjZo73A',
+    port: '5432',
+    ssl: 'require'
 });
 
 const app = express();
