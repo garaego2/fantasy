@@ -28,7 +28,10 @@ const pool = new Pool({
 });
 
 const app = express();
-
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' https://fantasy-uo2b.onrender.com 'nonce-xyz456...'; style-src 'self' 'nonce-xyz456...'; img-src 'self' data:; connect-src 'self' blob:;");
+  next();
+});
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
