@@ -22,7 +22,9 @@ const pool = new Pool({
     database: 'players',
     password: 'IlHmQxjZo73A',
     port: '5432',
-    ssl: 'require'
+    ssl: {
+      rejectUnauthorized: false  // Use this for development; in production, you should provide CA certificate
+    }
 });
 
 const app = express();
