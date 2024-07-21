@@ -117,35 +117,73 @@ app.post('/login', async (req, res) => {
 
 // Save team route 
 app.post('/api/save-team', async (req, res) => {
-  const { startId, benchId, capId, teamName, userId } = req.body; 
+  const { startId, benchId, capId, teamName, userId } = req.body;
 
   try {
-      const query = `
-          INSERT INTO user_teams (user_id, start_id, bench_id, cap_id, team_name)
-          VALUES ($1, $2, $3, $4, $5)
-          ON CONFLICT (user_id) DO UPDATE
-          SET
-              team_name = EXCLUDED.team_name,
-              start_id = EXCLUDED.start_id,
-              bench_id = EXCLUDED.bench_id,
-              cap_id = EXCLUDED.cap_id
-          RETURNING id;
+      const currentTime = new Date();
+      
+      // Determine current round_id
+      const roundQuery = `
+          SELECT round_id
+          FROM rounds
+          WHERE start_date <= $1 AND end_date >= $1
+          LIMIT 1;
       `;
+      const roundResult = await pool.query(roundQuery, [currentTime.toISOString()]);
+      const currentRoundId = roundResult.rows[0]?.round_id;
 
-      const result = await pool.query(query, [
-          userId, 
-          JSON.stringify(startId),
-          JSON.stringify(benchId),
-          capId,
-          teamName
-      ]);
+      if (!currentRoundId) {
+          return res.status(400).json({ success: false, error: 'No current round found' });
+      }
 
-      res.json({ success: true, teamId: result.rows[0].id });
+      // Check if the user already has a team for the current round
+      const teamQuery = `
+          SELECT id
+          FROM user_teams
+          WHERE user_id = $1 AND round_id = $2;
+      `;
+      const teamResult = await pool.query(teamQuery, [userId, currentRoundId]);
+
+      if (teamResult.rows.length > 0) {
+          // Update existing team
+          const updateQuery = `
+              UPDATE user_teams
+              SET start_id = $1, bench_id = $2, cap_id = $3, team_name = $4
+              WHERE user_id = $5 AND round_id = $6
+              RETURNING id;
+          `;
+          const result = await pool.query(updateQuery, [
+              JSON.stringify(startId),
+              JSON.stringify(benchId),
+              capId,
+              teamName,
+              userId,
+              currentRoundId
+          ]);
+          res.json({ success: true, teamId: result.rows[0].id });
+      } else {
+          // Insert new team
+          const insertQuery = `
+              INSERT INTO user_teams (user_id, start_id, bench_id, cap_id, team_name, round_id)
+              VALUES ($1, $2, $3, $4, $5, $6)
+              RETURNING id;
+          `;
+          const result = await pool.query(insertQuery, [
+              userId,
+              JSON.stringify(startId),
+              JSON.stringify(benchId),
+              capId,
+              teamName,
+              currentRoundId
+          ]);
+          res.json({ success: true, teamId: result.rows[0].id });
+      }
   } catch (error) {
       console.error('Database error:', error);
       res.status(500).json({ success: false, error: 'Failed to save team' });
   }
 });
+
 
 
 const LocalStrategy = require('passport-local').Strategy;
@@ -196,8 +234,12 @@ app.get('/leaderboard-data', (req, res) => {
       console.error('Error connecting to PostgreSQL database', err);
       res.status(500).json({ error: 'Error connecting to database' });
     } else {
-      client.query('SELECT team_name, points FROM user_teams ORDER BY points DESC', (err, result) => {
-        done(); 
+      client.query(`
+        SELECT user_id, team_name, points
+        FROM user_teams
+        ORDER BY points DESC
+      `, (err, result) => {
+        done();
         if (err) {
           console.error('Error executing query', err);
           res.status(500).json({ error: 'Error fetching data' });
@@ -209,12 +251,12 @@ app.get('/leaderboard-data', (req, res) => {
     }
   });
 });
-/*
-// Serve static files from the 'public' directory
+
 app.use(express.static('public'));
+
 async function processAndUpsertData(client, filePattern, roundIdentifier) {
   try {
-    // Use glob to find all files matching the pattern
+    // Find all files matching the pattern
     const filePaths = glob.sync(filePattern);
 
     if (filePaths.length === 0) {
@@ -240,7 +282,7 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
       const player = row['PLAYER'];
       if (!acc[player]) {
         acc[player] = {
-          '#': row['#'], 
+          '#': row['#'],
           GOALS: 0,
           'PF DRAWN': 0,
           SWIMOFFS: 0,
@@ -255,23 +297,23 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
         };
       }
       for (const key in acc[player]) {
-        if (key !== '#') { 
+        if (key !== '#') {
           acc[player][key] += parseInt(row[key]) || 0;
         }
       }
       return acc;
     }, {});
-    
+
+    // Transform aggregated data into an array
     const aggregatedArray = Object.keys(aggregatedData).map(player => {
       return { PLAYER: player, ...aggregatedData[player] };
     });
 
     // Calculate 'Weighted_Score' and 'Points'
     aggregatedArray.forEach(row => {
-      if ([1, 13].includes(parseInt(row['#']))) { 
+      if ([1, 13].includes(parseInt(row['#']))) {
         row.Weighted_Score = (row.GOALS * 33) + row.SAVES;
       } else {
-        // General calculation for other players
         row.Weighted_Score = (
           (row.GOALS * 6) +
           2 * (row['PF DRAWN'] + row.SWIMOFFS + row.BLOCKS + row.ASSISTS + row.STEALS) -
@@ -285,26 +327,56 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
     });
 
     // Fetch existing points and processed rounds from the database
-    const playerPoints = await client.query('SELECT name, points, processed_rounds FROM player');
+    const playerPoints = await client.query(
+      'SELECT name, points, points_1, points_2, points_3, points_4, points_5, points_6, points_7, points_8, processed_rounds FROM player'
+    );
 
+    // Map existing player data
     const playerMap = playerPoints.rows.reduce((acc, player) => {
-      acc[player.name] = { points: player.points || 0, processed_rounds: player.processed_rounds || [] };
+      acc[player.name] = {
+        points: player.points || 0,
+        processed_rounds: player.processed_rounds || [],
+        pointsByRound: {
+          1: player.points_1 || 0,
+          2: player.points_2 || 0,
+          3: player.points_3 || 0,
+          4: player.points_4 || 0,
+          5: player.points_5 || 0,
+          6: player.points_6 || 0,
+          7: player.points_7 || 0,
+          8: player.points_8 || 0
+        }
+      };
       return acc;
     }, {});
 
-    // Update the player's points in the database
+    // Update the player's points
     for (const row of aggregatedArray) {
       const playerName = row.PLAYER;
-      const newPoints = row.Points;
 
-      if (!playerMap[playerName].processed_rounds.includes(roundIdentifier)) {
-        const totalPoints = playerMap[playerName].points + newPoints;
+      // Check if player exists in playerMap
+      if (playerMap[playerName]) {
+        const newPoints = row.Points;
 
-        await client.query(
-          'UPDATE player SET points = $1, processed_rounds = processed_rounds || $2::jsonb WHERE name = $3',
-          [totalPoints, JSON.stringify([roundIdentifier]), playerName]
-        );
-      }
+        if (!playerMap[playerName].processed_rounds.includes(roundIdentifier)) {
+          // Update total points and points for the current round
+          const totalPoints = playerMap[playerName].points + newPoints;
+
+          await client.query(
+            `UPDATE player
+             SET points = $1,
+                 points_${roundIdentifier} = $2,
+                 processed_rounds = processed_rounds || ARRAY[$3]::integer[]
+             WHERE name = $4`,
+            [
+              totalPoints,
+              newPoints,
+              roundIdentifier,
+              playerName
+            ]
+          );
+        }
+      } 
     }
 
     return aggregatedArray;
@@ -314,32 +386,171 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
   }
 }
 
-module.exports = processAndUpsertData;
-app.get('/process-data', (req, res) => {
-  pool.connect((err, client, done) => {
-    if (err) {
-      console.error('Error connecting to PostgreSQL database', err);
-      res.status(500).json({ error: 'Error connecting to database' });
-    } else {
-      const filePattern = '/Users/egor/Downloads/player_stats_*.csv';  // Pattern to match all CSV files
 
-      processAndUpsertData(client, filePattern, roundIdentifier)
-        .then((aggregatedData) => {
-          done();
-          res.status(200).json({
-            message: 'Data processed and upserted successfully.',
-            data: aggregatedData.slice(0, 5)  // Return a sample of the data
-          });
-        })
-        .catch((error) => {
-          done();
-          console.error('Error processing data', error);
-          res.status(500).json({ error: 'Error processing data' });
-        });
+
+module.exports = processAndUpsertData;
+app.get('/process-data', async (req, res) => {
+  try {
+    // Connect to the database
+    const client = await pool.connect();
+    const currentRound = await getCurrentRound(client);
+
+    if (!currentRound) {
+      return res.status(404).json({ error: 'No current round found' });
     }
-  });
+
+    const roundIdentifier = currentRound.round_id;
+    const filePattern = '/Users/egor/Downloads/player_stats_*.csv';  // Pattern to match all CSV files
+
+    // Process and upsert data
+    await processAndUpsertData(client, filePattern, roundIdentifier);
+
+    client.release(); // Release the client back to the pool
+    res.status(200).json({ message: 'Data processed and upserted successfully.' });
+  } catch (error) {
+    console.error('Error processing data:', error);
+    res.status(500).json({ error: 'Error processing data' });
+  }
 });
-*/
+
+app.get('/api/current-round', async (req, res) => {
+  try {
+      const client = await pool.connect();
+      const round = await getCurrentRound(client); // Function to get current round
+      client.release();
+      res.json(round);
+  } catch (error) {
+      console.error('Error fetching current round:', error);
+      res.status(500).json({ error: 'Error fetching current round' });
+  }
+});
+
+app.get('/api/user-team', async (req, res) => {
+  const { userId, roundId } = req.query;
+
+  try {
+      const client = await pool.connect();
+      const team = await getUserTeamForRound(client, userId, roundId); // Function to get user's team
+      client.release();
+      if (team.length === 0) {
+          res.status(404).json({ message: 'No team found' });
+      } else {
+          res.json({ team });
+      }
+  } catch (error) {
+      console.error('Error fetching user team:', error);
+      res.status(500).json({ error: 'Error fetching user team' });
+  }
+});
+
+async function getCurrentRound(client) {
+  const now = new Date();
+  const query = `
+      SELECT round_id, start_date, end_date, deadline
+      FROM Rounds
+      WHERE start_date <= $1 AND end_date >= $1
+      LIMIT 1;
+  `;
+  const values = [now];
+  const res = await client.query(query, values);
+  return res.rows[0];
+}
+
+app.get('/api/team-details/:userId/:currentRound', async (req, res) => {
+  const { userId } = req.params;
+  const client = await pool.connect();
+
+  try {
+    // Get the current round details
+    const currentRound = await getCurrentRound(client);
+    if (!currentRound) {
+      return res.status(404).json({ success: false, error: 'No current round found.' });
+    }
+
+    const roundId = currentRound.round_id;
+
+    // Fetch team details
+    const teamDetails = await getTeamDetails(userId, roundId);
+
+    // Fetch player points
+    const playerIds = [...teamDetails.start_id, ...teamDetails.bench_id, teamDetails.cap_id];
+    const playerPoints = await getPlayerPoints(playerIds, roundId);
+
+    // Map player points to player IDs
+    const playerMap = {};
+    playerPoints.forEach(player => {
+      playerMap[player.id] = {
+        name: player.name,
+        points: player.points
+      };
+    });
+
+    // Construct the response
+    const response = {
+      success: true,
+      team: {
+        ...teamDetails,
+        playerMap
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching team details:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch team details.' });
+  } finally {
+    client.release();
+  }
+});
+
+async function getTeamDetails(userId, roundId) {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(`
+      SELECT team_name AS team_name, start_id, bench_id, cap_id
+      FROM user_teams
+      WHERE user_id = $1 AND round_id = $2
+    `, [userId, roundId]);
+
+    if (res.rows.length === 0) {
+      throw new Error('No team found for this user and round.');
+    }
+
+    const team = res.rows[0];
+    return {
+      teamName: team.teamname,
+      start_id: team.start_id,
+      bench_id: team.bench_id,
+      cap_id: team.cap_id
+    };
+  } finally {
+    client.release();
+  }
+}
+
+async function getPlayerPoints(playerIds, roundId) {
+  const client = await pool.connect();
+  try {
+    // Construct the dynamic column name
+    const roundColumn = `points_${roundId}`;
+    const query = `
+      SELECT id, name, ${roundColumn} AS points
+      FROM player
+      WHERE id = ANY($1::int[])
+    `;
+    const res = await client.query(query, [playerIds]);
+
+    return res.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      points: row.points
+    }));
+  } finally {
+    client.release();
+  }
+}
+module.exports = { getTeamDetails, getPlayerPoints };
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;

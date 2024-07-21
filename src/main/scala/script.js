@@ -17,7 +17,6 @@ function openTab(evt, tabName) {
 }
 
 
-
 // Check if the player is already selected
 function isPlayerSelected(playerName) {
     const selectedPlayers = document.querySelectorAll('#starting-lineup .player-display .player-label, #bench .player-display .player-label');
@@ -289,12 +288,12 @@ document.getElementById('save-team-button').addEventListener('click', handleSave
 
 //////////
 let captainId = null;
+let selectedPlayers = {};
 
 document.querySelectorAll('#available-players tr').forEach(row => {
 });
 
-function handleSaveTeam() {
-    // Retrieve userId from session storage
+async function handleSaveTeam() {
     const userId = sessionStorage.getItem('userId');
     const username = sessionStorage.getItem('username'); 
     if (!userId) {
@@ -315,42 +314,38 @@ function handleSaveTeam() {
         return;
     }
 
-    console.log('Sending data:', {
-        userId: userId,
-        teamName: username,
-        startId: startingLineup,
-        benchId: bench,
-        capId: captainId
-    });
-
-    fetch('http://localhost:3000/api/save-team', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            userId: userId,
-            teamName: username,
-            startId: startingLineup,
-            benchId: bench,
-            capId: captainId
-        })
-    })
-    .then(response => {
+    try {
+        const response = await fetch('http://localhost:3000/api/current-round');
         if (!response.ok) {
-            return response.text().then(text => { throw new Error(text) });
+            throw new Error('Failed to fetch current round');
         }
-        return response.json();
-    })
-    .then(data => {
+        const currentRound = await response.json();
+        console.log(currentRound)
+
+        const saveResponse = await fetch('http://localhost:3000/api/save-team', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userId: userId,
+                teamName: username,
+                startId: startingLineup.length ? startingLineup : previousTeam.startId,
+                benchId: bench.length ? bench : previousTeam.benchId,
+                capId: captainId
+            })
+        });
+
+        if (!saveResponse.ok) {
+            throw new Error('Failed to save team');
+        }
+        
         alert('Team saved successfully!');
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error:', error);
         alert('Failed to save team: ' + error.message);
-    });
+    }
 }
-
 
 // Handle player selection and placement
 function selectPlayer(playerId, playerName) {
@@ -490,36 +485,129 @@ function createPlayerDisplay(section, index) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    function fetchLeaderboardData() {
-      fetch('http://localhost:3000/leaderboard-data')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then(data => {
-          const leaderboardOutput = document.getElementById('leaderboard-output');
-          leaderboardOutput.innerHTML = '';
-  
-          data.leaderboardData.forEach(team => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${team.team_name}</td>
-              <td>${team.points}</td>
-            `;
-            leaderboardOutput.appendChild(row);
-          });
-        })
-        .catch(error => {
-          console.error('Error fetching leaderboard data:', error);
+    // Define global functions to ensure they are accessible from HTML
+    window.fetchTeamDetails = function(userId) {
+        // Get the current round ID asynchronously
+        getCurrentRoundId().then(currentRoundId => {
+            if (currentRoundId === null) {
+                alert('Could not determine the current round.');
+                return;
+            }
+
+            fetch(`http://localhost:3000/api/team-details/${userId}/${currentRoundId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Received data:', data); // Log the data for debugging
+                    if (data.success) {
+                        displayTeamDetails(data.team, currentRoundId);
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching team details:', error);
+                    alert('Failed to fetch team details.');
+                });
+        }).catch(error => {
+            console.error('Error determining current round:', error);
         });
+    };
+
+    function fetchLeaderboardData() {
+        fetch('http://localhost:3000/leaderboard-data')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const leaderboardOutput = document.getElementById('leaderboard-output');
+                leaderboardOutput.innerHTML = '';
+
+                data.leaderboardData.forEach(team => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${team.team_name}</td>
+                        <td>${team.points}</td>
+                        <td><button onclick="fetchTeamDetails(${team.user_id})">View Team</button></td>
+                    `;
+                    leaderboardOutput.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching leaderboard data:', error);
+            });
     }
-  
+
+    async function getCurrentRoundId() {
+        // Define the start dates for each round
+        const roundStartDates = [
+            { id: 1, startDate: new Date("2024-07-21T00:00:00+03:00") },
+            { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00") },
+            { id: 3, startDate: new Date("2024-08-01T00:00:00+03:00") },
+            { id: 4, startDate: new Date("2024-08-03T00:00:00+03:00") },
+            { id: 5, startDate: new Date("2024-08-05T00:00:00+03:00") },
+            { id: 6, startDate: new Date("2024-08-07T00:00:00+03:00") },
+            { id: 7, startDate: new Date("2024-08-09T00:00:00+03:00") },
+            { id: 8, startDate: new Date("2024-08-10T00:00:00+03:00") }
+        ];
+
+        // Get the current date and time
+        const now = new Date();
+
+        // Determine the current round ID based on the start dates
+        for (let i = 0; i < roundStartDates.length; i++) {
+            const round = roundStartDates[i];
+            if (now >= round.startDate) {
+                // Return the ID of the round that has started but not yet finished
+                if (i === roundStartDates.length - 1 || now < roundStartDates[i + 1].startDate) {
+                    return round.id;
+                }
+            }
+        }
+
+        // If no rounds match, return null or an appropriate default value
+        return null;
+    }
+
+    function displayTeamDetails(team, roundId) {
+        console.log('Displaying team details for team:', team); // Log the team details for debugging
+        const teamContainer = document.getElementById('team-details');
+        teamContainer.innerHTML = `
+            <h2>${team.teamName}</h2>
+            <h3>Starting Lineup</h3>
+            <ul>
+                ${team.start_id.map(player_id => {
+                    const player = team.playerMap[player_id] || { name: 'Unknown Player', points: 0 };
+                    return `<li>${player.name}: ${player.points}</li>`;
+                }).join('')}
+            </ul>
+            <h3>Bench</h3>
+            <ul>
+                ${team.bench_id.map(player_id => {
+                    const player = team.playerMap[player_id] || { name: 'Unknown Player', points: 0 };
+                    return `<li>${player.name}: ${player.points}</li>`;
+                }).join('')}
+            </ul>
+            <h3>Captain</h3>
+            <p>${team.playerMap[team.cap_id]?.name || 'Unknown Player'}: ${team.playerMap[team.cap_id]?.points || 0}</p>
+        `;
+    }
+
     fetchLeaderboardData();
-  });
+});
+
+
+
+
   
-  document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     const filterNationality = document.getElementById('filter-nationality');
     const sortMethod = document.getElementById('sort-method');
 
