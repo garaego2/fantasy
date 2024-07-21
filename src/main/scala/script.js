@@ -603,9 +603,6 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchLeaderboardData();
 });
 
-
-
-
   
 document.addEventListener('DOMContentLoaded', () => {
     const filterNationality = document.getElementById('filter-nationality');
@@ -634,7 +631,58 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePlayers();
 });
 
+async function findCurrentRound() {
+    const roundStartDates = [
+        { id: 1, startDate: new Date("2024-07-21T00:00:00+03:00"), deadline: new Date("2024-07-30T00:00:00+03:00") },
+        { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00"), deadline: new Date("2024-08-01T00:00:00+03:00") },
+        { id: 3, startDate: new Date("2024-08-01T00:00:00+03:00"), deadline: new Date("2024-08-03T00:00:00+03:00") },
+        { id: 4, startDate: new Date("2024-08-03T00:00:00+03:00"), deadline: new Date("2024-08-05T00:00:00+03:00") },
+        { id: 5, startDate: new Date("2024-08-05T00:00:00+03:00"), deadline: new Date("2024-08-07T00:00:00+03:00") },
+        { id: 6, startDate: new Date("2024-08-07T00:00:00+03:00"), deadline: new Date("2024-08-09T00:00:00+03:00") },
+        { id: 7, startDate: new Date("2024-08-09T00:00:00+03:00"), deadline: new Date("2024-08-10T00:00:00+03:00") },
+        { id: 8, startDate: new Date("2024-08-10T00:00:00+03:00") }
+    ];
+    const now = new Date();
+
+    for (let i = 0; i < roundStartDates.length; i++) {
+        const round = roundStartDates[i];
+        if (now >= round.startDate) {
+            if (i === roundStartDates.length - 1 || now < roundStartDates[i + 1].startDate) {
+                return {
+                    id: round.id,
+                    deadline: i < roundStartDates.length - 1 ? roundStartDates[i + 1].startDate : null
+                };
+            }
+        }
+    }
+    return null;
+}
+
+
+async function updateRoundInfo() {
+    try {
+        const roundInfo = await findCurrentRound();
+        const roundNumberElement = document.getElementById('roundNumber');
+        const roundDeadlineElement = document.getElementById('roundDeadline');
+        
+        if (roundInfo) {
+            const formattedDeadline = roundInfo.deadline ? roundInfo.deadline.toLocaleDateString() : 'No further rounds';
+            roundNumberElement.textContent = `Current Round: ${roundInfo.id}`;
+            roundDeadlineElement.textContent = `Deadline: ${formattedDeadline}`;
+        } else {
+            roundNumberElement.textContent = 'Current Round: N/A';
+            roundDeadlineElement.textContent = 'Deadline: N/A';
+        }
+    } catch (error) {
+        console.error('Error updating round information:', error);
+    }
+}
+
+updateRoundInfo();
+
+
 fetch('http://localhost:3000/process-data')
   .then(response => response.json())
   .then(data => console.log(data))
   .catch(error => console.error('Error:', error));
+
