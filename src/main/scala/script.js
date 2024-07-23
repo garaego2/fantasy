@@ -24,9 +24,9 @@ function isPlayerSelected(playerName) {
 }
 
 
+let removedPlayers = [];
 let removalCount = 0;
-const removalLimit = 2;
-const removedPlayers = [];
+const MAX_REMOVALS = 2;
 
 const transferStartDate1 = new Date('July 28, 2024 15:00:00');
 const transferEndDate1 = new Date('August 1, 2024 16:00:00');
@@ -43,42 +43,64 @@ function getCurrentTransferLimit() {
 }
 
 function removePlayer(section, index) {
-    const currentTransferLimit = getCurrentTransferLimit();
-
-    if (removalCount >= currentTransferLimit) {
-        document.getElementById('removal-limit-message').style.display = 'block';
-        return;
-    }
-
     const playerDiv = document.getElementById(`player-${section}-${index}`);
     if (playerDiv) {
         const playerLabel = playerDiv.querySelector('.player-label');
-        if (playerLabel && playerLabel.dataset.filled === 'true') {
-            const playerId = playerLabel.dataset.playerId; 
-            removedPlayers.push({section, index, playerId, playerName: playerLabel.textContent});
+        if (playerLabel) {
+            const playerId = playerLabel.dataset.playerId;
+            const playerName = playerLabel.textContent;
 
-            playerLabel.textContent = ''; 
+            // Store removed player information
+            removedPlayers.push({ section, index, playerId, playerName });
+
+            // Clear the player display
+            playerLabel.textContent = '';
             playerLabel.dataset.filled = 'false';
-            const captainButton = playerDiv.querySelector('button');
-            if (captainButton) {
-                captainButton.classList.remove('captain-selected'); // Clear captain class if needed
+            playerLabel.dataset.playerId = '';
+
+            // Remove player from selected lists
+            if (section === 'starting-lineup') {
+                selectedPlayers.startingLineup = selectedPlayers.startingLineup.filter(id => id !== playerId);
+            } else if (section === 'bench') {
+                selectedPlayers.bench = selectedPlayers.bench.filter(id => id !== playerId);
             }
-            selectedPlayers.startingLineup = selectedPlayers.startingLineup.filter(id => id !== playerId);
-            selectedPlayers.bench = selectedPlayers.bench.filter(id => id !== playerId);
 
             removalCount++;
-            if (removalCount > 0) {
-                document.getElementById('go-back-button').style.display = 'inline-block';
-            }
-            if (removalCount >= currentTransferLimit) {
-                document.getElementById('removal-limit-message').style.display = 'block';
-            }
+            console.log('Player removed:', { section, index, playerId, playerName });
+            console.log('Removed players list:', removedPlayers);
+            console.log('Removal count:', removalCount);
+            updateRemovalUI();
         }
+    }
+}
+function updateRemovalUI() {
+    const goBackButton = document.getElementById('go-back-button');
+    const removalLimitMessage = document.getElementById('removal-limit-message');
+
+    console.log('Updating UI...');
+    
+    if (removalCount > 0) {
+        goBackButton.style.display = 'block';
+        console.log('Go Back button should be visible');
+    } else {
+        goBackButton.style.display = 'none';
+        console.log('Go Back button should be hidden');
+    }
+
+    if (removalCount >= MAX_REMOVALS) {
+        removalLimitMessage.style.display = 'block';
+        console.log('Removal limit message should be visible');
+    } else {
+        removalLimitMessage.style.display = 'none';
+        console.log('Removal limit message should be hidden');
     }
 }
 
 function goBack() {
-    if (removedPlayers.length === 0) return;
+    if (removedPlayers.length === 0) {
+        console.log('No players to restore');
+        return;
+    }
 
     const lastRemoved = removedPlayers.pop();
     const { section, index, playerId, playerName } = lastRemoved;
@@ -86,66 +108,29 @@ function goBack() {
     if (playerDiv) {
         const playerLabel = playerDiv.querySelector('.player-label');
         if (playerLabel) {
-            playerLabel.textContent = playerName; 
-            playerLabel.dataset.filled = 'true'; 
+            playerLabel.textContent = playerName;
+            playerLabel.dataset.filled = 'true';
+            playerLabel.dataset.playerId = playerId;
 
             // Add player back to selected lists
-            if (section === 'startingLineup') {
+            if (section === 'starting-lineup') {
                 selectedPlayers.startingLineup.push(playerId);
             } else if (section === 'bench') {
                 selectedPlayers.bench.push(playerId);
             }
 
             removalCount--;
-            if (removalCount < getCurrentTransferLimit()) {
-                document.getElementById('removal-limit-message').style.display = 'none';
-            }
-            if (removalCount === 0) {
-                document.getElementById('go-back-button').style.display = 'none';
-            }
+            console.log('Player restored:', { section, index, playerId, playerName });
+            console.log('Removed players list:', removedPlayers);
+            console.log('Removal count:', removalCount);
+            updateRemovalUI();
         }
-    }
-}
-
-
-// Select captain for a slot
-function selectCaptain(section, index) {
-    const playerDivs = document.querySelectorAll(`#${section} .player-display`);
-    playerDivs.forEach(div => {
-        const captainButton = div.querySelector('button.captain-button');
-        if (captainButton) {
-            captainButton.classList.remove('captain-selected');
-        }
-    });
-
-    const playerDiv = document.getElementById(`player-${section}-${index}`);
-    if (playerDiv) {
-        const captainButton = playerDiv.querySelector('button.captain-button');
-        if (captainButton) {
-            captainButton.classList.add('captain-selected'); 
-            selectedPlayers.captainId = playerDiv.querySelector('.player-label').dataset.playerId; 
-            captainId = playerDiv.querySelector('.player-label').dataset.playerId;
-        }
-    }
-}
-
-// Create starting lineup and bench display divs
-function createTeamDisplays() {
-    const startingLineupCount = 7;
-    const benchCount = 6;
-
-    for (let i = 0; i < startingLineupCount; i++) {
-        createPlayerDisplay('starting-lineup', i);
-    }
-
-    for (let i = 0; i < benchCount; i++) {
-        createPlayerDisplay('bench', i);
     }
 }
 
 // Fetch players from the server
 function fetchPlayers(filterNationality = '', sortOrder = '', sortBy = '') {
-    return fetch('https://fantasy-uo2b.onrender.com/api/players')
+    return fetch('http://localhost:3000/api/players')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -254,11 +239,6 @@ function populateFilterOptions(players) {
     });
 }
 
-// Initialize team displays and fetch player data on page load
-document.addEventListener('DOMContentLoaded', () => {
-    createTeamDisplays();
-    fetchPlayers();
-});
 document.getElementById('filter-nationality').addEventListener('change', (event) => {
     const filterNationality = event.target.value;
     const sortOrder = document.getElementById('sort-method').value;
@@ -281,6 +261,8 @@ document.querySelector('.container').addEventListener('click', function(event) {
 // Initialize and fetch player data on page load
 document.addEventListener('DOMContentLoaded', () => {
     fetchPlayers().then(players => populateFilterOptions(players));
+    createTeamDisplays();
+    fetchPlayers();
 });
 
 // Add event listener to the Save Team button
@@ -288,7 +270,11 @@ document.getElementById('save-team-button').addEventListener('click', handleSave
 
 //////////
 let captainId = null;
-let selectedPlayers = {};
+const selectedPlayers = {
+    startingLineup: [],
+    bench: []
+};
+
 
 document.querySelectorAll('#available-players tr').forEach(row => {
 });
@@ -309,20 +295,23 @@ async function handleSaveTeam() {
         .map(label => label.dataset.playerId)
         .filter(id => id);
 
+    // Log captainId for debugging
+    console.log('Captain ID:', captainId);
+
     if (!captainId) {
         alert('Please select a captain.');
         return;
     }
 
     try {
-        const response = await fetch('https://fantasy-uo2b.onrender.com/api/current-round');
+        const response = await fetch('http://localhost:3000/api/current-round');
         if (!response.ok) {
             throw new Error('Failed to fetch current round');
         }
         const currentRound = await response.json();
-        console.log(currentRound)
+        console.log('Current Round:', currentRound);
 
-        const saveResponse = await fetch('https://fantasy-uo2b.onrender.com/api/save-team', {
+        const saveResponse = await fetch('http://localhost:3000/api/save-team', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -406,7 +395,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const password = document.getElementById('registerPassword').value;
 
     try {
-        const response = await fetch('https://fantasy-uo2b.onrender.com/register', {
+        const response = await fetch('http://localhost:3000/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -434,7 +423,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const response = await fetch('https://fantasy-uo2b.onrender.com/login', {
+        const response = await fetch('http://localhost:3000/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -456,34 +445,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
 });
 
-function createPlayerDisplay(section, index) {
-    const container = document.createElement('div');
-    container.className = 'player-display';
-    container.id = `player-${section}-${index}`;
-
-    const playerLabel = document.createElement('span');
-    playerLabel.className = 'player-label';
-    playerLabel.dataset.filled = 'false'; 
-
-    const captainButton = document.createElement('button');
-    captainButton.type = 'button';
-    captainButton.textContent = 'Captain';
-    captainButton.className = 'captain-button'; 
-    captainButton.onclick = () => selectCaptain(section, index);
-    captainButton.style.display = section === 'starting-lineup' ? 'inline' : 'none'; 
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.textContent = 'Remove';
-    removeButton.onclick = () => removePlayer(section, index);
-
-    container.appendChild(playerLabel);
-    container.appendChild(captainButton);
-    container.appendChild(removeButton);
-
-    document.getElementById(section).appendChild(container);
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     // Define global functions to ensure they are accessible from HTML
     window.fetchTeamDetails = function(userId) {
@@ -494,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            fetch(`https://fantasy-uo2b.onrender.com/api/team-details/${userId}/${currentRoundId}`)
+            fetch(`http://localhost:3000/api/team-details/${userId}/${currentRoundId}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -519,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function fetchLeaderboardData() {
-        fetch('https://fantasy-uo2b.onrender.com/leaderboard-data')
+        fetch('http://localhost:3000/leaderboard-data')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -633,14 +594,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function findCurrentRound() {
     const roundStartDates = [
-        { id: 1, startDate: new Date("2024-07-21T00:00:00+03:00"), deadline: new Date("2024-07-30T00:00:00+03:00") },
-        { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00"), deadline: new Date("2024-08-01T00:00:00+03:00") },
-        { id: 3, startDate: new Date("2024-08-01T00:00:00+03:00"), deadline: new Date("2024-08-03T00:00:00+03:00") },
-        { id: 4, startDate: new Date("2024-08-03T00:00:00+03:00"), deadline: new Date("2024-08-05T00:00:00+03:00") },
-        { id: 5, startDate: new Date("2024-08-05T00:00:00+03:00"), deadline: new Date("2024-08-07T00:00:00+03:00") },
-        { id: 6, startDate: new Date("2024-08-07T00:00:00+03:00"), deadline: new Date("2024-08-09T00:00:00+03:00") },
-        { id: 7, startDate: new Date("2024-08-09T00:00:00+03:00"), deadline: new Date("2024-08-10T00:00:00+03:00") },
-        { id: 8, startDate: new Date("2024-08-10T00:00:00+03:00") }
+        { id: 1, startDate: new Date("2024-07-21T00:00:00+03:00"), deadline: new Date("2024-07-28T00:00:00+03:00") },
+        { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00"), deadline: new Date("2024-07-30T00:00:00+03:00") },
+        { id: 3, startDate: new Date("2024-08-01T00:00:00+03:00"), deadline: new Date("2024-08-01T00:00:00+03:00") },
+        { id: 4, startDate: new Date("2024-08-03T00:00:00+03:00"), deadline: new Date("2024-08-03T00:00:00+03:00") },
+        { id: 5, startDate: new Date("2024-08-05T00:00:00+03:00"), deadline: new Date("2024-08-05T00:00:00+03:00") },
+        { id: 6, startDate: new Date("2024-08-07T00:00:00+03:00"), deadline: new Date("2024-08-07T00:00:00+03:00") },
+        { id: 7, startDate: new Date("2024-08-09T00:00:00+03:00"), deadline: new Date("2024-08-09T00:00:00+03:00") },
+        { id: 8, startDate: new Date("2024-08-10T00:00:00+03:00"),  deadline: new Date("2024-08-10T00:00:00+03:00") }
     ];
     const now = new Date();
 
@@ -681,8 +642,153 @@ async function updateRoundInfo() {
 updateRoundInfo();
 
 
-fetch('https://fantasy-uo2b.onrender.com/process-data')
+async function createTeamDisplays() {
+    try {
+        const user_id = sessionStorage.getItem('userId');
+        const response = await fetch(`http://localhost:3000/api/user-team/${user_id}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const team = await response.json();
+        const startingLineupContainer = document.getElementById('starting-lineup');
+        const benchContainer = document.getElementById('bench');
+        startingLineupContainer.innerHTML = '';
+        benchContainer.innerHTML = '';
+
+        const { start_names = [], bench_names = [], start_ids = [], bench_ids = [] } = team || {};
+        if (!start_names.length && !bench_names.length) {
+            createEmptyPlayerDisplays('starting-lineup', 7);
+            createEmptyPlayerDisplays('bench', 6);
+        } else {
+            start_names.forEach((name, i) => name && createPlayerDisplay('starting-lineup', i, name, start_ids[i]));
+            bench_names.forEach((name, i) => name && createPlayerDisplay('bench', i, name, bench_ids[i]));
+        }
+    } catch (error) {
+        console.error('Failed to create team displays:', error);
+    }
+}
+
+function createPlayerDisplay(section, index, playerName = '', playerId = '') {
+    const container = document.createElement('div');
+    container.className = 'player-display';
+    container.id = `player-${section}-${index}`;
+
+    container.innerHTML = `
+        <span class="player-label" data-filled="${playerName ? 'true' : 'false'}" data-player-id="${playerId}">${playerName}</span>
+        <button type="button" class="captain-button" style="display: ${section === 'starting-lineup' ? 'inline' : 'none'}">Captain</button>
+        <button type="button">Remove</button>
+    `;
+
+    container.querySelector('.captain-button').onclick = (event) => {
+        event.stopPropagation();
+        selectCaptain(container);
+    };
+    container.querySelector('button:last-child').onclick = () => removePlayer(section, index);
+
+    document.getElementById(section).appendChild(container);
+}
+
+function createEmptyPlayerDisplays(section, count) {
+    for (let i = 0; i < count; i++) createPlayerDisplay(section, i);
+}
+
+function selectCaptain(playerDiv) {
+    const section = playerDiv.parentElement.id;
+    if (section !== 'starting-lineup') {
+        console.log('Cannot select captain from the bench.');
+        return;
+    }
+
+    document.querySelectorAll(`#${section} .player-display .captain-button`).forEach(button => {
+        button.classList.remove('captain-selected');
+    });
+
+    const captainButton = playerDiv.querySelector('.captain-button');
+    captainButton.classList.add('captain-selected');
+
+    const playerLabel = playerDiv.querySelector('.player-label');
+    selectedPlayers.captainId = playerLabel.dataset.playerId;
+    captainId = playerDiv.querySelector('.player-label').dataset.playerId;
+    console.log('Current captain ID:', selectedPlayers.captainId);
+    console.log('Current captain name:', playerLabel.textContent);
+}
+
+let selectedPlayer = null;
+
+function swapPlayers(player1, player2) {
+    const [container1, container2] = [player1.parentElement, player2.parentElement];
+    if (!container1 || !container2) {
+        console.error('One of the containers is missing');
+        return;
+    }
+
+    container1.appendChild(player2);
+    container2.appendChild(player1);
+
+    [player1.id, player2.id] = [player2.id, player1.id];
+
+    updateCaptainButtonVisibility(player1);
+    updateCaptainButtonVisibility(player2);
+}
+
+function updateCaptainButtonVisibility(player) {
+    const section = player.parentElement.id;
+    const captainButton = player.querySelector('.captain-button');
+
+    if (section === 'starting-lineup') {
+        captainButton.style.display = 'inline';
+        captainButton.onclick = (event) => {
+            event.stopPropagation();
+            selectCaptain(player);
+        };
+    } else {
+        captainButton.style.display = 'none';
+        captainButton.onclick = null;
+    }
+}
+
+function handlePlayerClick(player) {
+    if (selectedPlayer) {
+        swapPlayers(selectedPlayer, player);
+        removeHighlight(selectedPlayer);
+        selectedPlayer = null;
+    } else {
+        selectedPlayer = player;
+        addHighlight(player);
+    }
+}
+
+function addHighlight(player) {
+    player.classList.add('player-highlighted');
+}
+
+function removeHighlight(player) {
+    player.classList.remove('player-highlighted');
+}
+
+function attachPlayerClickListeners() {
+    const allPlayers = document.querySelectorAll('#starting-lineup .player-display, #bench .player-display');
+    allPlayers.forEach(player => {
+        player.removeEventListener('click', playerClickHandler);
+        player.addEventListener('click', playerClickHandler);
+    });
+}
+
+function playerClickHandler(event) {
+    if (event.target.classList.contains('player-label')) {
+        handlePlayerClick(event.currentTarget);
+    }
+}
+
+function setupDynamicPlayerHandling() {
+    const observer = new MutationObserver(attachPlayerClickListeners);
+    observer.observe(document.getElementById('starting-lineup'), { childList: true });
+    observer.observe(document.getElementById('bench'), { childList: true });
+    attachPlayerClickListeners();
+}
+
+document.addEventListener('DOMContentLoaded', setupDynamicPlayerHandling);
+
+fetch('http://localhost:3000/process-data')
   .then(response => response.json())
   .then(data => console.log(data))
   .catch(error => console.error('Error:', error));
-

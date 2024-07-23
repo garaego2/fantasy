@@ -22,19 +22,10 @@ const pool = new Pool({
     database: 'players',
     password: 'IlHmQxjZo73A',
     port: '5432',
-    ssl: {
-      rejectUnauthorized: false  // Use this for development; in production, you should provide CA certificate
-    }
+    ssl: 'require'
 });
 
 const app = express();
-app.use((req, res, next) => {
-  const nonce = crypto.randomBytes(16).toString('base64');
-  res.locals.nonce = nonce; // Store nonce in res.locals to use it in templates if needed
-
-  res.setHeader("Content-Security-Policy", `default-src 'self'; script-src 'self' https://fantasy-uo2b.onrender.com 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'; img-src 'self' data:; connect-src 'self' https://fantasy-uo2b.onrender.com blob:;`);
-  next();
-});
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -560,6 +551,70 @@ async function getPlayerPoints(playerIds, roundId) {
 }
 module.exports = { getTeamDetails, getPlayerPoints };
 
+async function getUserTeam(user_id) {
+  const client = await pool.connect();
+  try {
+      const queryText = `
+          SELECT start_id, bench_id, round_id
+          FROM user_teams
+          WHERE user_id = $1
+          ORDER BY round_id DESC
+          LIMIT 1;
+      `;
+      const res = await client.query(queryText, [user_id]);
+      if (res.rows.length > 0) {
+          const team = res.rows[0];
+          const startIds = team.start_id;
+          const benchIds = team.bench_id;
+          
+          // Fetch player names for both starting lineup and bench
+          const [startPlayers, benchPlayers] = await Promise.all([
+              getPlayerNames(startIds),
+              getPlayerNames(benchIds)
+          ]);
+
+          return {
+              start_ids: startIds,
+              bench_ids: benchIds,
+              start_names: startIds.map(id => startPlayers[id] || 'Unknown'),
+              bench_names: benchIds.map(id => benchPlayers[id] || 'Unknown'),
+              round_id: team.round_id
+          };
+      } else {
+          return null;
+      }
+  } finally {
+      client.release();
+  }
+}
+
+async function getPlayerNames(ids) {
+  if (!ids.length) return [];
+
+  const client = await pool.connect();
+  try {
+      const queryText = `SELECT id, name FROM player WHERE id = ANY($1::int[])`;
+      const res = await client.query(queryText, [ids]);
+      const playerNames = res.rows.reduce((acc, row) => {
+          acc[row.id] = row.name;
+          return acc;
+      }, {});
+      return playerNames;
+  } finally {
+      client.release();
+  }
+}
+
+app.get('/api/user-team/:user_id', async (req, res) => {
+  const user_id = req.params.user_id;
+  try {
+      const team = await getUserTeam(user_id);
+      res.json(team);
+  } catch (err) {
+      console.error(err);
+      res.status(500).send('Server error');
+  }
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
