@@ -36,9 +36,9 @@ const limitedTransfersStart = transferEndDate1;
 function getCurrentTransferLimit() {
     const now = new Date();
     if (now < unlimitedTransfersEnd) {
-        return Infinity; // Unlimited transfers
+        return Infinity; 
     } else if (now >= unlimitedTransfersEnd) {
-        return removalLimit; // Limited transfers
+        return removalLimit;
     }
 }
 
@@ -49,16 +49,12 @@ function removePlayer(section, index) {
         if (playerLabel) {
             const playerId = playerLabel.dataset.playerId;
             const playerName = playerLabel.textContent;
-
-            // Store removed player information
             removedPlayers.push({ section, index, playerId, playerName });
 
-            // Clear the player display
             playerLabel.textContent = '';
             playerLabel.dataset.filled = 'false';
             playerLabel.dataset.playerId = '';
 
-            // Remove player from selected lists
             if (section === 'starting-lineup') {
                 selectedPlayers.startingLineup = selectedPlayers.startingLineup.filter(id => id !== playerId);
             } else if (section === 'bench') {
@@ -66,9 +62,6 @@ function removePlayer(section, index) {
             }
 
             removalCount++;
-            console.log('Player removed:', { section, index, playerId, playerName });
-            console.log('Removed players list:', removedPlayers);
-            console.log('Removal count:', removalCount);
             updateRemovalUI();
         }
     }
@@ -76,29 +69,22 @@ function removePlayer(section, index) {
 function updateRemovalUI() {
     const goBackButton = document.getElementById('go-back-button');
     const removalLimitMessage = document.getElementById('removal-limit-message');
-
-    console.log('Updating UI...');
     
     if (removalCount > 0) {
         goBackButton.style.display = 'block';
-        console.log('Go Back button should be visible');
     } else {
         goBackButton.style.display = 'none';
-        console.log('Go Back button should be hidden');
     }
 
     if (removalCount >= MAX_REMOVALS) {
         removalLimitMessage.style.display = 'block';
-        console.log('Removal limit message should be visible');
     } else {
         removalLimitMessage.style.display = 'none';
-        console.log('Removal limit message should be hidden');
     }
 }
 
 function goBack() {
     if (removedPlayers.length === 0) {
-        console.log('No players to restore');
         return;
     }
 
@@ -112,7 +98,6 @@ function goBack() {
             playerLabel.dataset.filled = 'true';
             playerLabel.dataset.playerId = playerId;
 
-            // Add player back to selected lists
             if (section === 'starting-lineup') {
                 selectedPlayers.startingLineup.push(playerId);
             } else if (section === 'bench') {
@@ -120,9 +105,6 @@ function goBack() {
             }
 
             removalCount--;
-            console.log('Player restored:', { section, index, playerId, playerName });
-            console.log('Removed players list:', removedPlayers);
-            console.log('Removal count:', removalCount);
             updateRemovalUI();
         }
     }
@@ -183,7 +165,7 @@ function displayPlayers(players) {
     players.forEach(player => {
         if (player.name && player.points != null && player.nationality && player.id) {
             const row = document.createElement('tr');
-            row.dataset.playerId = player.id; // Store player ID in a data attribute
+            row.dataset.playerId = player.id;
 
             const nameCell = document.createElement('td');
             nameCell.textContent = player.name;
@@ -218,7 +200,6 @@ function populateFilterOptions(players) {
     const filterSelect = document.getElementById('filter-nationality');
     const predefinedNationalities = ['AUS', 'CRO', 'FRA', 'GRE', 'HUN', 'ITA', 'JPN', 'MNE', 'ROU', 'SRB', 'SPA', 'USA'];
 
-    // Add predefined options
     filterSelect.innerHTML = '<option value="">All</option>';
     predefinedNationalities.forEach(nationality => {
         const option = document.createElement('option');
@@ -227,7 +208,6 @@ function populateFilterOptions(players) {
         filterSelect.appendChild(option);
     });
 
-    // Add dynamically fetched options
     const nationalities = new Set(players.map(player => player.nationality));
     nationalities.forEach(nationality => {
         if (!predefinedNationalities.includes(nationality)) {
@@ -265,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchPlayers();
 });
 
-// Add event listener to the Save Team button
 document.getElementById('save-team-button').addEventListener('click', handleSaveTeam);
 
 //////////
@@ -295,9 +274,6 @@ async function handleSaveTeam() {
         .map(label => label.dataset.playerId)
         .filter(id => id);
 
-    // Log captainId for debugging
-    console.log('Captain ID:', captainId);
-
     if (!captainId) {
         alert('Please select a captain.');
         return;
@@ -309,7 +285,6 @@ async function handleSaveTeam() {
             throw new Error('Failed to fetch current round');
         }
         const currentRound = await response.json();
-        console.log('Current Round:', currentRound);
 
         const saveResponse = await fetch('http://localhost:3000/api/save-team', {
             method: 'POST',
@@ -347,8 +322,6 @@ function selectPlayer(playerId, playerName) {
     }
 
     let added = false;
-
-    // Try to add player to the starting lineup
     Array.from(startingLineupDiv.children).some((div) => {
         if (div instanceof HTMLElement) {
             const playerLabel = div.querySelector('.player-label');
@@ -364,7 +337,6 @@ function selectPlayer(playerId, playerName) {
         return false; 
     });
 
-    // If not added to starting lineup, try to add player to the bench
     if (!added) {
         Array.from(benchDiv.children).some((div) => {
             if (div instanceof HTMLElement) {
@@ -446,9 +418,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Define global functions to ensure they are accessible from HTML
     window.fetchTeamDetails = function(userId) {
-        // Get the current round ID asynchronously
         getCurrentRoundId().then(currentRoundId => {
             if (currentRoundId === null) {
                 alert('Could not determine the current round.');
@@ -463,7 +433,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Received data:', data); // Log the data for debugging
                     if (data.success) {
                         displayTeamDetails(data.team, currentRoundId);
                     } else {
@@ -507,7 +476,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function getCurrentRoundId() {
-        // Define the start dates for each round
         const roundStartDates = [
             { id: 1, startDate: new Date("2024-07-21T00:00:00+03:00") },
             { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00") },
@@ -519,26 +487,19 @@ document.addEventListener('DOMContentLoaded', function() {
             { id: 8, startDate: new Date("2024-08-10T00:00:00+03:00") }
         ];
 
-        // Get the current date and time
         const now = new Date();
-
-        // Determine the current round ID based on the start dates
         for (let i = 0; i < roundStartDates.length; i++) {
             const round = roundStartDates[i];
             if (now >= round.startDate) {
-                // Return the ID of the round that has started but not yet finished
                 if (i === roundStartDates.length - 1 || now < roundStartDates[i + 1].startDate) {
                     return round.id;
                 }
             }
         }
-
-        // If no rounds match, return null or an appropriate default value
         return null;
     }
 
     function displayTeamDetails(team, roundId) {
-        console.log('Displaying team details for team:', team); // Log the team details for debugging
         const teamContainer = document.getElementById('team-details');
         teamContainer.innerHTML = `
             <h2>${team.teamName}</h2>
@@ -694,7 +655,6 @@ function createEmptyPlayerDisplays(section, count) {
 function selectCaptain(playerDiv) {
     const section = playerDiv.parentElement.id;
     if (section !== 'starting-lineup') {
-        console.log('Cannot select captain from the bench.');
         return;
     }
 
@@ -708,8 +668,6 @@ function selectCaptain(playerDiv) {
     const playerLabel = playerDiv.querySelector('.player-label');
     selectedPlayers.captainId = playerLabel.dataset.playerId;
     captainId = playerDiv.querySelector('.player-label').dataset.playerId;
-    console.log('Current captain ID:', selectedPlayers.captainId);
-    console.log('Current captain name:', playerLabel.textContent);
 }
 
 let selectedPlayer = null;
@@ -789,6 +747,9 @@ function setupDynamicPlayerHandling() {
 document.addEventListener('DOMContentLoaded', setupDynamicPlayerHandling);
 
 fetch('http://localhost:3000/process-data')
-  .then(response => response.json())
-  .then(data => console.log(data))
-  .catch(error => console.error('Error:', error));
+  .then(response => {
+    return response.json();
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });

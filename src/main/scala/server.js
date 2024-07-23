@@ -34,16 +34,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Configure express-session to use session store
 app.use(session({
     store: new pgSession({
-        pool: pool, // Use the same pool as your PostgreSQL connection
+        pool: pool, 
         tableName: 'sessions'
     }),
-    secret: 'your_secret_key', // Replace with a secure random string
+    secret: 'your_secret_key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // Set secure: true if using HTTPS
+    cookie: { secure: false } 
 }));
 
-// Initialize Passport and restore authentication state, if any, from the session.
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -53,7 +52,7 @@ app.use(passport.session());
 app.get('/api/players', async (req, res) => {
     try {
         const result = await pool.query('SELECT id, name, points, nationality, p_points FROM player');
-        res.json(result.rows); // Send the results as JSON
+        res.json(result.rows); 
     } catch (error) {
         console.error('Error fetching players:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -121,8 +120,6 @@ app.post('/api/save-team', async (req, res) => {
 
   try {
       const currentTime = new Date();
-      
-      // Determine current round_id
       const roundQuery = `
           SELECT round_id
           FROM rounds
@@ -135,8 +132,6 @@ app.post('/api/save-team', async (req, res) => {
       if (!currentRoundId) {
           return res.status(400).json({ success: false, error: 'No current round found' });
       }
-
-      // Check if the user already has a team for the current round
       const teamQuery = `
           SELECT id
           FROM user_teams
@@ -145,7 +140,6 @@ app.post('/api/save-team', async (req, res) => {
       const teamResult = await pool.query(teamQuery, [userId, currentRoundId]);
 
       if (teamResult.rows.length > 0) {
-          // Update existing team
           const updateQuery = `
               UPDATE user_teams
               SET start_id = $1, bench_id = $2, cap_id = $3, team_name = $4
@@ -162,7 +156,6 @@ app.post('/api/save-team', async (req, res) => {
           ]);
           res.json({ success: true, teamId: result.rows[0].id });
       } else {
-          // Insert new team
           const insertQuery = `
               INSERT INTO user_teams (user_id, start_id, bench_id, cap_id, team_name, round_id)
               VALUES ($1, $2, $3, $4, $5, $6)
@@ -188,7 +181,7 @@ app.post('/api/save-team', async (req, res) => {
 
 const LocalStrategy = require('passport-local').Strategy;
 
-// Configure Passport to use LocalStrategy for username/password authentication
+// Configure Passport 
 passport.use(new LocalStrategy(
     async (username, password, done) => {
         try {
@@ -204,16 +197,16 @@ passport.use(new LocalStrategy(
                 return done(null, false, { message: 'Incorrect password.' });
             }
 
-            return done(null, user); // Return the user object if authentication succeeds
+            return done(null, user); 
         } catch (error) {
-            return done(error); // Pass any database errors to done
+            return done(error);
         }
     }
 ));
 
 // Serialize user into the session
 passport.serializeUser((user, done) => {
-    done(null, user.user_id); // Serialize the user's id to the session
+    done(null, user.user_id);
 });
 
 // Deserialize user from the session
@@ -256,14 +249,11 @@ app.use(express.static('public'));
 
 async function processAndUpsertData(client, filePattern, roundIdentifier) {
   try {
-    // Find all files matching the pattern
     const filePaths = glob.sync(filePattern);
 
     if (filePaths.length === 0) {
       throw new Error('No files found matching the pattern.');
     }
-
-    // Read and concatenate all CSV files into a single array
     let combinedData = [];
     for (const filePath of filePaths) {
       const data = await new Promise((resolve, reject) => {
@@ -277,7 +267,6 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
       combinedData = combinedData.concat(data);
     }
 
-    // Aggregate data by player
     const aggregatedData = combinedData.reduce((acc, row) => {
       const player = row['PLAYER'];
       if (!acc[player]) {
@@ -304,12 +293,10 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
       return acc;
     }, {});
 
-    // Transform aggregated data into an array
     const aggregatedArray = Object.keys(aggregatedData).map(player => {
       return { PLAYER: player, ...aggregatedData[player] };
     });
 
-    // Calculate 'Weighted_Score' and 'Points'
     aggregatedArray.forEach(row => {
       if ([1, 13].includes(parseInt(row['#']))) {
         row.Weighted_Score = (row.GOALS * 33) + row.SAVES;
@@ -326,12 +313,10 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
       row.Points = row.Weighted_Score;
     });
 
-    // Fetch existing points and processed rounds from the database
     const playerPoints = await client.query(
       'SELECT name, points, points_1, points_2, points_3, points_4, points_5, points_6, points_7, points_8, processed_rounds FROM player'
     );
 
-    // Map existing player data
     const playerMap = playerPoints.rows.reduce((acc, player) => {
       acc[player.name] = {
         points: player.points || 0,
@@ -350,16 +335,13 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
       return acc;
     }, {});
 
-    // Update the player's points
     for (const row of aggregatedArray) {
       const playerName = row.PLAYER;
 
-      // Check if player exists in playerMap
       if (playerMap[playerName]) {
         const newPoints = row.Points;
 
         if (!playerMap[playerName].processed_rounds.includes(roundIdentifier)) {
-          // Update total points and points for the current round
           const totalPoints = playerMap[playerName].points + newPoints;
 
           await client.query(
@@ -391,7 +373,6 @@ async function processAndUpsertData(client, filePattern, roundIdentifier) {
 module.exports = processAndUpsertData;
 app.get('/process-data', async (req, res) => {
   try {
-    // Connect to the database
     const client = await pool.connect();
     const currentRound = await getCurrentRound(client);
 
@@ -400,12 +381,10 @@ app.get('/process-data', async (req, res) => {
     }
 
     const roundIdentifier = currentRound.round_id;
-    const filePattern = '/Users/egor/Downloads/player_stats_*.csv';  // Pattern to match all CSV files
-
-    // Process and upsert data
+    const filePattern = '/Users/egor/Downloads/player_stats_*.csv'; 
     await processAndUpsertData(client, filePattern, roundIdentifier);
 
-    client.release(); // Release the client back to the pool
+    client.release(); 
     res.status(200).json({ message: 'Data processed and upserted successfully.' });
   } catch (error) {
     console.error('Error processing data:', error);
@@ -416,7 +395,7 @@ app.get('/process-data', async (req, res) => {
 app.get('/api/current-round', async (req, res) => {
   try {
       const client = await pool.connect();
-      const round = await getCurrentRound(client); // Function to get current round
+      const round = await getCurrentRound(client); 
       client.release();
       res.json(round);
   } catch (error) {
@@ -430,7 +409,7 @@ app.get('/api/user-team', async (req, res) => {
 
   try {
       const client = await pool.connect();
-      const team = await getUserTeamForRound(client, userId, roundId); // Function to get user's team
+      const team = await getUserTeamForRound(client, userId, roundId); 
       client.release();
       if (team.length === 0) {
           res.status(404).json({ message: 'No team found' });
@@ -461,22 +440,16 @@ app.get('/api/team-details/:userId/:currentRound', async (req, res) => {
   const client = await pool.connect();
 
   try {
-    // Get the current round details
     const currentRound = await getCurrentRound(client);
     if (!currentRound) {
       return res.status(404).json({ success: false, error: 'No current round found.' });
     }
 
     const roundId = currentRound.round_id;
-
-    // Fetch team details
     const teamDetails = await getTeamDetails(userId, roundId);
-
-    // Fetch player points
     const playerIds = [...teamDetails.start_id, ...teamDetails.bench_id, teamDetails.cap_id];
     const playerPoints = await getPlayerPoints(playerIds, roundId);
 
-    // Map player points to player IDs
     const playerMap = {};
     playerPoints.forEach(player => {
       playerMap[player.id] = {
@@ -485,7 +458,6 @@ app.get('/api/team-details/:userId/:currentRound', async (req, res) => {
       };
     });
 
-    // Construct the response
     const response = {
       success: true,
       team: {
@@ -531,7 +503,6 @@ async function getTeamDetails(userId, roundId) {
 async function getPlayerPoints(playerIds, roundId) {
   const client = await pool.connect();
   try {
-    // Construct the dynamic column name
     const roundColumn = `points_${roundId}`;
     const query = `
       SELECT id, name, ${roundColumn} AS points
@@ -567,7 +538,6 @@ async function getUserTeam(user_id) {
           const startIds = team.start_id;
           const benchIds = team.bench_id;
           
-          // Fetch player names for both starting lineup and bench
           const [startPlayers, benchPlayers] = await Promise.all([
               getPlayerNames(startIds),
               getPlayerNames(benchIds)
