@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Water polo fantasy website",
   "main": "server.js",
+  "engines": {"node": "14.x"},
   "scripts": {
     "start": "node server.js"
   },
@@ -23,6 +24,6 @@
     "csv-parser": "^3.0.0"
   },
   "devDependencies": {},
-  "author": "Egor",
+  "author": "",
   "license": "ISC"
 }
