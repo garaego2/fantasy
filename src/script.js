@@ -150,7 +150,7 @@ function swapPlayers(player1, player2) {
 // API calls
 // Fetch players from the server
 function fetchPlayers(filterNationality = '', sortOrder = '', sortBy = '') {
-    return fetch('http://localhost:3000/api/players')
+    return fetch('fantasy-kohl.vercel.app/api/players')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -210,13 +210,13 @@ async function handleSaveTeam() {
     }
 
     try {
-        const response = await fetch('http://localhost:3000/api/current-round');
+        const response = await fetch('fantasy-kohl.vercel.app/api/current-round');
         if (!response.ok) {
             throw new Error('Failed to fetch current round');
         }
         const currentRound = await response.json();
 
-        const saveResponse = await fetch('http://localhost:3000/api/save-team', {
+        const saveResponse = await fetch('fantasy-kohl.vercel.app/api/save-team', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -264,7 +264,7 @@ async function updateRoundInfo() {
 async function createTeamDisplays() {
     try {
         const user_id = sessionStorage.getItem('userId');
-        const response = await fetch(`http://localhost:3000/api/user-team/${user_id}`);
+        const response = await fetch(`fantasy-kohl.vercel.app/api/user-team/${user_id}`);
         if (!response.ok) throw new Error('Network response was not ok');
         
         const team = await response.json();
@@ -447,7 +447,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const password = document.getElementById('registerPassword').value;
 
     try {
-        const response = await fetch('http://localhost:3000/register', {
+        const response = await fetch('fantasy-kohl.vercel.app/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -475,7 +475,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const response = await fetch('http://localhost:3000/login', {
+        const response = await fetch('fantasy-kohl.vercel.app/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            fetch(`http://localhost:3000/api/team-details/${userId}/${currentRoundId}`)
+            fetch(`fantasy-kohl.vercel.app/api/team-details/${userId}/${currentRoundId}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function fetchLeaderboardData() {
-        fetch('http://localhost:3000/leaderboard-data')
+        fetch('fantasy-kohl.vercel.app/leaderboard-data')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -731,7 +731,7 @@ function setupDynamicPlayerHandling() {
     attachPlayerClickListeners();
 }
 
-fetch('http://localhost:3000/process-data')
+fetch('fantasy-kohl.vercel.app/process-data')
   .then(response => {
     return response.json();
   })
