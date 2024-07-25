@@ -4,8 +4,7 @@
   "description": "Water polo fantasy website",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "echo 'No build step defined'"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.17.1",
