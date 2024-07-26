@@ -613,7 +613,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function getCurrentRoundId() {
         const roundStartDates = [
-            { id: 1, startDate: new Date("2024-07-21T00:00:00+03:00") },
+            { id: 0, startDate: new Date("2024-07-21T00:00:00+03:00") },
+            { id: 1, startDate: new Date("2024-07-28T11:30:00+03:00") },
             { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00") },
             { id: 3, startDate: new Date("2024-08-01T00:00:00+03:00") },
             { id: 4, startDate: new Date("2024-08-03T00:00:00+03:00") },
@@ -668,7 +669,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function findCurrentRound() {
     const roundStartDates = [
-        { id: 1, startDate: new Date("2024-07-21T00:00:00+03:00"), deadline: new Date("2024-07-28T00:00:00+03:00") },
+        { id: 0, startDate: new Date("2024-07-21T00:00:00+03:00"), deadline: new Date("2024-07-28T00:00:00+03:00") },
+        { id: 1, startDate: new Date("2024-07-28T11:30:00+03:00"), deadline: new Date("2024-07-28T11:30:00+03:00") },
         { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00"), deadline: new Date("2024-07-30T00:00:00+03:00") },
         { id: 3, startDate: new Date("2024-08-01T00:00:00+03:00"), deadline: new Date("2024-08-01T00:00:00+03:00") },
         { id: 4, startDate: new Date("2024-08-03T00:00:00+03:00"), deadline: new Date("2024-08-03T00:00:00+03:00") },
