@@ -11,6 +11,8 @@ const transferEndDate1 = new Date('August 1, 2024 16:00:00');
 const unlimitedTransfersEnd = transferStartDate1;
 const limitedTransfersStart = transferEndDate1;
 
+const API_URL = "http://localhost:3000"
+
 function getCurrentTransferLimit() {
     const now = new Date();
     return now < unlimitedTransfersEnd ? Infinity : MAX_REMOVALS;
@@ -150,7 +152,7 @@ function swapPlayers(player1, player2) {
 // API calls
 // Fetch players from the server
 function fetchPlayers(filterNationality = '', sortOrder = '', sortBy = '') {
-    return fetch('/api/players')
+    return fetch(`${API_URL}/api/players`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -210,13 +212,13 @@ async function handleSaveTeam() {
     }
 
     try {
-        const response = await fetch('/api/current-round');
+        const response = await fetch(`${API_URL}/api/current-round`);
         if (!response.ok) {
             throw new Error('Failed to fetch current round');
         }
         const currentRound = await response.json();
 
-        const saveResponse = await fetch('/api/save-team', {
+        const saveResponse = await fetch(`${API_URL}/api/save-team`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -264,7 +266,7 @@ async function updateRoundInfo() {
 async function createTeamDisplays() {
     try {
         const user_id = sessionStorage.getItem('userId');
-        const response = await fetch(`/api/user-team/${user_id}`);
+        const response = await fetch(`${API_URL}/api/user-team/${user_id}`);
         if (!response.ok) throw new Error('Network response was not ok');
         
         const team = await response.json();
@@ -447,7 +449,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const password = document.getElementById('registerPassword').value;
 
     try {
-        const response = await fetch('/register', {
+        const response = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -475,7 +477,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const response = await fetch('/login', {
+        const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -559,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            fetch(`/api/team-details/${userId}/${currentRoundId}`)
+            fetch(`${API_URL}/api/team-details/${userId}/${currentRoundId}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -583,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function fetchLeaderboardData() {
-        fetch('/leaderboard-data')
+        fetch(`${API_URL}/leaderboard-data`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -731,7 +733,7 @@ function setupDynamicPlayerHandling() {
     attachPlayerClickListeners();
 }
 
-fetch('/process-data')
+fetch(`${API_URL}/process-data`)
   .then(response => {
     return response.json();
   })
