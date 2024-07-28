@@ -1,6 +1,11 @@
-{
+{ "engines": {
+  "node": "20.x"
+},
   "dependencies": {
     "cors": "^2.8.5",
     "semver": "^7.5.4"
+  }, 
+  "scripts": {
+    "postinstall": "npm rebuild"
   }
 }
