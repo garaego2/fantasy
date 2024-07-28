@@ -5,7 +5,7 @@ let removedPlayers = [];
 let removalCount = 0;
 const MAX_REMOVALS = 2;
 let selectedPlayer = null;
-const API_URL = "http://localhost:3000"
+const API_URL = "https://fantasy-7kgh.onrender.com"
 
 const limitedTransfersStart = new Date('July 28, 2024 12:30:00');
 
