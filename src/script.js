@@ -5,17 +5,13 @@ let removedPlayers = [];
 let removalCount = 0;
 const MAX_REMOVALS = 2;
 let selectedPlayer = null;
-
-const transferStartDate1 = new Date('July 28, 2024 15:00:00');
-const transferEndDate1 = new Date('August 1, 2024 16:00:00');
-const unlimitedTransfersEnd = transferStartDate1;
-const limitedTransfersStart = transferEndDate1;
-
 const API_URL = "http://localhost:3000"
 
+const limitedTransfersStart = new Date('July 28, 2024 12:30:00');
+
 function getCurrentTransferLimit() {
-    const now = new Date();
-    return now < unlimitedTransfersEnd ? Infinity : MAX_REMOVALS;
+  const now = new Date();
+  return now < limitedTransfersStart ? Infinity : MAX_REMOVALS;
 }
 
 // Functions for player selection and team management
@@ -67,26 +63,33 @@ function selectPlayer(playerId, playerName) {
 }
 
 function removePlayer(section, index) {
+    const currentLimit = getCurrentTransferLimit();
+    
+    if (removalCount >= currentLimit) {
+      updateRemovalUI(); 
+      return;
+    }
+  
     const playerDiv = document.getElementById(`player-${section}-${index}`);
     if (!playerDiv) return;
-
+  
     const playerLabel = playerDiv.querySelector('.player-label');
     if (!playerLabel) return;
-
+  
     const playerId = playerLabel.dataset.playerId;
     const playerName = playerLabel.textContent;
+  
     removedPlayers.push({ section, index, playerId, playerName });
-
     playerLabel.textContent = '';
     playerLabel.dataset.filled = 'false';
     playerLabel.dataset.playerId = '';
-
-    selectedPlayers[section === 'starting-lineup' ? 'startingLineup' : 'bench'] = 
-        selectedPlayers[section === 'starting-lineup' ? 'startingLineup' : 'bench'].filter(id => id !== playerId);
-
+  
+    selectedPlayers[section === 'starting-lineup' ? 'startingLineup' : 'bench'] =
+      selectedPlayers[section === 'starting-lineup' ? 'startingLineup' : 'bench'].filter(id => id !== playerId);
+  
     removalCount++;
     updateRemovalUI();
-}
+  }
 
 function goBack() {
     if (removedPlayers.length === 0) {
@@ -315,15 +318,15 @@ function updateRemovalUI() {
     const goBackButton = document.getElementById('go-back-button');
     const removalLimitMessage = document.getElementById('removal-limit-message');
     const currentLimit = getCurrentTransferLimit();
-    
+  
     goBackButton.style.display = removalCount > 0 ? 'block' : 'none';
     
     if (currentLimit !== Infinity && removalCount >= currentLimit) {
-        removalLimitMessage.style.display = 'block';
+      removalLimitMessage.style.display = 'block';
     } else {
-        removalLimitMessage.style.display = 'none';
+      removalLimitMessage.style.display = 'none';
     }
-}
+  }
 
 // Populate the player list on the right side
 function displayPlayers(players) {
