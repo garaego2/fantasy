@@ -10,7 +10,6 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "semver": "5.4.6",
     "bcryptjs": "^2.4.3",
     "connect-pg-simple": "^6.2.1",
     "cors": "^2.8.5",
@@ -24,7 +23,8 @@
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
-    "pg": "^8.6.0"
+    "pg": "^8.6.0",
+    "semver": "^7.6.3"
   },
   "author": "",
   "license": "ISC"
