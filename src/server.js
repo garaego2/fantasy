@@ -27,7 +27,7 @@ const pool = new Pool({
 
 const app = express();
 app.use(cors({
-  origin: 'https://fantasy-7kgh.onrender.com'
+ // origin: 'https://fantasy-7kgh.onrender.com'
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -119,14 +119,14 @@ app.post('/login', async (req, res) => {
 
 // Save team route 
 app.post('/api/save-team', async (req, res) => {
-  const { startId, benchId, capId, teamName, userId } = req.body;
+  const { startId, benchId, capId, teamName, userId, roundId } = req.body;
 
   try {
       const currentTime = new Date();
       const roundQuery = `
           SELECT round_id
           FROM rounds
-          WHERE start_date <= $1 AND end_date >= $1
+          WHERE start_date <= $1 AND deadline >= $1
           LIMIT 1;
       `;
       const roundResult = await pool.query(roundQuery, [currentTime.toISOString()]);
@@ -180,8 +180,6 @@ app.post('/api/save-team', async (req, res) => {
   }
 });
 
-
-
 const LocalStrategy = require('passport-local').Strategy;
 
 // Configure Passport 
@@ -223,29 +221,85 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-// Route to render leaderboard
-app.get('/leaderboard-data', (req, res) => {
-  pool.connect((err, client, done) => {
-    if (err) {
-      console.error('Error connecting to PostgreSQL database', err);
-      res.status(500).json({ error: 'Error connecting to database' });
-    } else {
-      client.query(`
-        SELECT user_id, team_name, points
-        FROM user_teams
-        ORDER BY points DESC
-      `, (err, result) => {
-        done();
-        if (err) {
-          console.error('Error executing query', err);
-          res.status(500).json({ error: 'Error fetching data' });
-        } else {
-          const leaderboardData = result.rows;
-          res.json({ leaderboardData });
-        }
-      });
-    }
-  });
+// Updated endpoint for leaderboard data
+app.get('/leaderboard-data', async (req, res) => {
+  try {
+    const query = `
+    WITH start_and_bench_points AS (
+      SELECT 
+          ut.id AS team_id,
+          ut.round_id,
+          ut.user_id,
+          ut.team_name,
+          (ut.cap_id::text)::integer AS captain_id,
+          -- Calculate total points for players in start_id
+          SUM(
+              CASE 
+                  WHEN p.id = ANY (SELECT (jsonb_array_elements_text(ut.start_id)::integer) FROM jsonb_array_elements_text(ut.start_id)) THEN
+                      COALESCE(p.points_1, 0) + COALESCE(p.points_2, 0) + COALESCE(p.points_3, 0) +
+                      COALESCE(p.points_4, 0) + COALESCE(p.points_5, 0) + COALESCE(p.points_6, 0) +
+                      COALESCE(p.points_7, 0) + COALESCE(p.points_8, 0)
+                  ELSE 0
+              END
+          ) AS start_points,
+          -- Calculate total points for players in bench_id, with halved points
+          SUM(
+              CASE 
+                  WHEN p.id = ANY (SELECT (jsonb_array_elements_text(ut.bench_id)::integer) FROM jsonb_array_elements_text(ut.bench_id)) THEN
+                      (COALESCE(p.points_1, 0) + COALESCE(p.points_2, 0) + COALESCE(p.points_3, 0) +
+                       COALESCE(p.points_4, 0) + COALESCE(p.points_5, 0) + COALESCE(p.points_6, 0) +
+                       COALESCE(p.points_7, 0) + COALESCE(p.points_8, 0)) * 0.5
+                  ELSE 0
+              END
+          ) AS bench_points
+      FROM user_teams ut
+      LEFT JOIN player p 
+          ON p.id = ANY (SELECT (jsonb_array_elements_text(ut.start_id)::integer) FROM jsonb_array_elements_text(ut.start_id))
+          OR p.id = ANY (SELECT (jsonb_array_elements_text(ut.bench_id)::integer) FROM jsonb_array_elements_text(ut.bench_id))
+      GROUP BY ut.id, ut.user_id, ut.team_name, ut.round_id, ut.cap_id
+  ),
+  captain_points AS (
+      SELECT
+          ut.round_id,
+          ut.id AS team_id,
+          (ut.cap_id::text)::integer AS captain_id,
+          -- Calculate total points for the captain
+          COALESCE(p.points_1, 0) + COALESCE(p.points_2, 0) + COALESCE(p.points_3, 0) +
+          COALESCE(p.points_4, 0) + COALESCE(p.points_5, 0) + COALESCE(p.points_6, 0) +
+          COALESCE(p.points_7, 0) + COALESCE(p.points_8, 0) AS captain_total_points
+      FROM user_teams ut
+      LEFT JOIN player p ON p.id = (ut.cap_id::text)::integer
+      WHERE ut.cap_id IS NOT NULL
+  ),
+  combined_points AS (
+      SELECT
+          sbp.team_id,
+          sbp.round_id,
+          sbp.user_id,
+          sbp.team_name,
+          sbp.start_points,
+          sbp.bench_points,
+          COALESCE(cp.captain_total_points, 0) AS captain_points,
+          (sbp.start_points + sbp.bench_points + COALESCE(cp.captain_total_points, 0)) AS total_points
+      FROM start_and_bench_points sbp
+      LEFT JOIN captain_points cp
+      ON sbp.team_id = cp.team_id AND sbp.round_id = cp.round_id
+  )
+  SELECT 
+      user_id,
+      team_name,
+      SUM(total_points) AS total_points
+  FROM combined_points
+  GROUP BY user_id, team_name
+  ORDER BY total_points DESC;
+    `;
+
+    const result = await pool.query(query);
+    res.json({ leaderboardData: result.rows });
+  } catch (error) {
+    console.error('Error calculating leaderboard points:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.use(express.static('public'));
@@ -428,9 +482,9 @@ app.get('/api/user-team', async (req, res) => {
 async function getCurrentRound(client) {
   const now = new Date();
   const query = `
-      SELECT round_id, start_date, end_date, deadline
+      SELECT round_id, start_date, deadline
       FROM Rounds
-      WHERE start_date <= $1 AND end_date >= $1
+      WHERE start_date <= $1 AND deadline >= $1
       LIMIT 1;
   `;
   const values = [now];

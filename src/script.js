@@ -5,7 +5,7 @@ let removedPlayers = [];
 let removalCount = 0;
 const MAX_REMOVALS = 2;
 let selectedPlayer = null;
-const API_URL = "https://fantasy-7kgh.onrender.com"
+const API_URL = "http://localhost:3000"
 
 const limitedTransfersStart = new Date('July 28, 2024 12:30:00');
 
@@ -196,6 +196,7 @@ function fetchPlayers(filterNationality = '', sortOrder = '', sortBy = '') {
 async function handleSaveTeam() {
     const userId = sessionStorage.getItem('userId');
     const username = sessionStorage.getItem('username'); 
+    const currentRound = await findCurrentRound();
     if (!userId) {
         alert('User not logged in.');
         return;
@@ -219,7 +220,6 @@ async function handleSaveTeam() {
         if (!response.ok) {
             throw new Error('Failed to fetch current round');
         }
-        const currentRound = await response.json();
 
         const saveResponse = await fetch(`${API_URL}/api/save-team`, {
             method: 'POST',
@@ -231,14 +231,14 @@ async function handleSaveTeam() {
                 teamName: username,
                 startId: startingLineup.length ? startingLineup : previousTeam.startId,
                 benchId: bench.length ? bench : previousTeam.benchId,
-                capId: captainId
+                capId: captainId,
+                roundId: currentRound.id
             })
         });
 
         if (!saveResponse.ok) {
             throw new Error('Failed to save team');
         }
-        
         alert('Team saved successfully!');
     } catch (error) {
         console.error('Error:', error);
@@ -247,7 +247,6 @@ async function handleSaveTeam() {
 }
 
 // UI updates
-
 async function updateRoundInfo() {
     try {
         const roundInfo = await findCurrentRound();
@@ -255,12 +254,22 @@ async function updateRoundInfo() {
         const roundDeadlineElement = document.getElementById('roundDeadline');
         
         if (roundInfo) {
-            const formattedDeadline = roundInfo.deadline ? roundInfo.deadline.toLocaleDateString() : 'No further rounds';
+            const formattedDeadline = roundInfo && roundInfo.deadline 
+        ? roundInfo.deadline.toLocaleString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+        }) 
+        : 'No further rounds';
             roundNumberElement.textContent = `Current Round: ${roundInfo.id}`;
-            roundDeadlineElement.textContent = `Deadline: ${formattedDeadline}`;
+            roundDeadlineElement.textContent = `Next Round Deadline: ${formattedDeadline}`;
         } else {
             roundNumberElement.textContent = 'Current Round: N/A';
-            roundDeadlineElement.textContent = 'Deadline: N/A';
+            roundDeadlineElement.textContent = 'Next Round Deadline: N/A';
         }
     } catch (error) {
         console.error('Error updating round information:', error);
@@ -587,33 +596,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
-    function fetchLeaderboardData() {
-        fetch(`${API_URL}/leaderboard-data`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const leaderboardOutput = document.getElementById('leaderboard-output');
-                leaderboardOutput.innerHTML = '';
-
-                data.leaderboardData.forEach(team => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${team.team_name}</td>
-                        <td>${team.points}</td>
-                        <td><button id="viewTeamButton" onclick="fetchTeamDetails(${team.user_id})">View Team</button></td>
-                    `;
-                    leaderboardOutput.appendChild(row);
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching leaderboard data:', error);
-            });
-    }
-
     async function getCurrentRoundId() {
         const roundStartDates = [
             { id: 0, startDate: new Date("2024-07-21T00:00:00+03:00") },
@@ -642,7 +624,34 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchLeaderboardData();
 });
 
-  
+function fetchLeaderboardData() {
+    fetch(`${API_URL}/leaderboard-data`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        const leaderboardOutput = document.getElementById('leaderboard-output');
+        leaderboardOutput.innerHTML = '';
+        data.leaderboardData.forEach((team, index) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${team.team_name}</td>
+            <td>${team.total_points}</td>
+            <td><button id="viewTeamButton" onclick="fetchTeamDetails(${team.user_id})">View Team</button></td>
+          `;
+          leaderboardOutput.appendChild(row);
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching leaderboard data:', error);
+      });
+}
+
+document.addEventListener('DOMContentLoaded', fetchLeaderboardData);
 document.addEventListener('DOMContentLoaded', () => {
     const filterNationality = document.getElementById('filter-nationality');
     const sortMethod = document.getElementById('sort-method');
@@ -674,13 +683,13 @@ async function findCurrentRound() {
     const roundStartDates = [
         { id: 0, startDate: new Date("2024-07-21T00:00:00+03:00"), deadline: new Date("2024-07-28T00:00:00+03:00") },
         { id: 1, startDate: new Date("2024-07-28T11:30:00+03:00"), deadline: new Date("2024-07-28T11:30:00+03:00") },
-        { id: 2, startDate: new Date("2024-07-30T00:00:00+03:00"), deadline: new Date("2024-07-30T00:00:00+03:00") },
-        { id: 3, startDate: new Date("2024-08-01T00:00:00+03:00"), deadline: new Date("2024-08-01T00:00:00+03:00") },
-        { id: 4, startDate: new Date("2024-08-03T00:00:00+03:00"), deadline: new Date("2024-08-03T00:00:00+03:00") },
-        { id: 5, startDate: new Date("2024-08-05T00:00:00+03:00"), deadline: new Date("2024-08-05T00:00:00+03:00") },
-        { id: 6, startDate: new Date("2024-08-07T00:00:00+03:00"), deadline: new Date("2024-08-07T00:00:00+03:00") },
-        { id: 7, startDate: new Date("2024-08-09T00:00:00+03:00"), deadline: new Date("2024-08-09T00:00:00+03:00") },
-        { id: 8, startDate: new Date("2024-08-10T00:00:00+03:00"),  deadline: new Date("2024-08-10T00:00:00+03:00") }
+        { id: 2, startDate: new Date("2024-07-30T11:30:00+03:00"), deadline: new Date("2024-07-30T11:30:00+03:00") },
+        { id: 3, startDate: new Date("2024-08-01T11:30:00+03:00"), deadline: new Date("2024-08-01T11:30:00+03:00") },
+        { id: 4, startDate: new Date("2024-08-03T11:30:00+03:00"), deadline: new Date("2024-08-03T11:30:00+03:00") },
+        { id: 5, startDate: new Date("2024-08-05T13:00:00+03:00"), deadline: new Date("2024-08-05T13:00:00+03:00") },
+        { id: 6, startDate: new Date("2024-08-07T12:00:00+03:00"), deadline: new Date("2024-08-07T12:00:00+03:00") },
+        { id: 7, startDate: new Date("2024-08-09T12:00:00+03:00"), deadline: new Date("2024-08-09T12:00:00+03:00") },
+        { id: 8, startDate: new Date("2024-08-11T12:00:00+03:00"), deadline: new Date("2024-08-12T12:00:00+03:00") }
     ];
     const now = new Date();
 
